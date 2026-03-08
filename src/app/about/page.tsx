@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import NewsletterCTA from "@/components/NewsletterCTA";
 import CrossPromoStrip from "@/components/CrossPromoStrip";
+import { ecosystem, buildUtmUrl } from "@/lib/ecosystem-config";
 
 export const metadata: Metadata = {
   title: "About CareerTalks",
@@ -115,12 +116,12 @@ export default function AboutPage() {
 
             <p>
               CareerTalks is part of an ecosystem of educational platforms. Our sibling projects include{" "}
-              <a href="https://www.aithinktank.space" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-violet-600 underline underline-offset-2 transition-colors">
+              <a href={buildUtmUrl(ecosystem.aitt.url, "strip")} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-violet-600 underline underline-offset-2 transition-colors">
                 AI Think Tank
               </a>{" "}
               (making AI accessible for everyone) and{" "}
-              <a href="https://www.thepractiseground.space" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-violet-600 underline underline-offset-2 transition-colors">
-                The Practice Ground
+              <a href={buildUtmUrl(ecosystem.tpg.url, "strip")} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-violet-600 underline underline-offset-2 transition-colors">
+                The Practise Ground
               </a>{" "}
               (hands-on skill building through quizzes and practice). Together, we&apos;re building a comprehensive platform for learning and growth.
             </p>

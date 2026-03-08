@@ -49,7 +49,7 @@ const faqs = [
   {
     question: "Is CareerTalks connected to other educational platforms?",
     answer:
-      "Yes! CareerTalks is part of an educational ecosystem alongside AI Think Tank (aithinktank.space) which makes AI accessible for everyone, and The Practice Ground (thepractiseground.space) which offers hands-on skill building through quizzes and practice exercises. Together, these platforms provide a comprehensive learning experience.",
+      "Yes! CareerTalks is part of an educational ecosystem alongside AI Think Tank (www.aithinktank.space) which makes AI accessible for everyone, and The Practise Ground (www.thepractiseground.in) which offers hands-on skill building through quizzes and practice exercises. Together, these platforms provide a comprehensive learning experience.",
   },
   {
     question: "How can I suggest a career path or topic to cover?",
