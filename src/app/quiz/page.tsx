@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { careerConfigs, clusterConfigs } from "@/lib/career-config";
 import type { Cluster, CareerSlug } from "@/lib/career-config";
+import ShareButton from "@/components/ShareButton";
 
 interface Question {
   id: number;
@@ -108,6 +109,53 @@ function getTopCareers(scores: Record<Cluster, number>): { cluster: Cluster; car
   ];
 }
 
+const confettiEmojis = ["🎉", "✨", "🌟", "💫", "🎊"];
+
+function Confetti() {
+  return (
+    <div className="fixed inset-0 pointer-events-none overflow-hidden">
+      {Array.from({ length: 25 }).map((_, i) => (
+        <span
+          key={i}
+          className="fixed text-2xl animate-confetti-fall"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `-20px`,
+            animationDelay: `${Math.random() * 0.5}s`,
+            animationDuration: `${2 + Math.random() * 1}s`,
+          }}
+        >
+          {confettiEmojis[Math.floor(Math.random() * confettiEmojis.length)]}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function ScoreBreakdownBar({ cluster, score }: { cluster: Cluster; score: number }) {
+  const config = clusterConfigs[cluster];
+  const maxScore = 7;
+  const percentage = (score / maxScore) * 100;
+
+  return (
+    <div className="mb-6">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm font-semibold text-gray-900">{config.title}</span>
+        <span className="text-sm font-bold text-gray-700">{score}/{maxScore}</span>
+      </div>
+      <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all duration-1000 ease-out"
+          style={{
+            backgroundColor: config.accent,
+            width: `${percentage}%`,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function QuizPage() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [scores, setScores] = useState<Record<Cluster, number>>({
@@ -118,10 +166,12 @@ export default function QuizPage() {
   });
   const [showResults, setShowResults] = useState(false);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [fadeOut, setFadeOut] = useState(false);
 
   const progress = ((currentQuestion) / questions.length) * 100;
 
   const handleAnswer = (clusters: Cluster[]) => {
+    setFadeOut(true);
     const newScores = { ...scores };
     clusters.forEach((cluster) => {
       newScores[cluster] += 1;
@@ -132,6 +182,7 @@ export default function QuizPage() {
       if (currentQuestion < questions.length - 1) {
         setCurrentQuestion(currentQuestion + 1);
         setSelectedOption(null);
+        setFadeOut(false);
       } else {
         setShowResults(true);
       }
@@ -143,42 +194,50 @@ export default function QuizPage() {
     setScores({ tech: 0, business: 0, science: 0, creative: 0 });
     setShowResults(false);
     setSelectedOption(null);
+    setFadeOut(false);
   };
 
   if (showResults) {
     const results = getTopCareers(scores);
     const topCluster = results[0].cluster;
     const topConfig = clusterConfigs[topCluster];
+    const shareMessage = `I'm a ${topConfig.title} Explorer! 🎯 Discover your career match:`;
+    const shareUrl = typeof window !== "undefined" ? window.location.href : "";
 
     return (
       <>
+        <Confetti />
         {/* Results Hero */}
         <section className="relative overflow-hidden hero-dark noise-overlay">
           <div className="absolute inset-0 dot-pattern opacity-20" />
           <div
-            className="absolute top-20 right-10 w-72 h-72 rounded-full blur-3xl opacity-20"
+            className="absolute top-20 right-10 w-72 h-72 rounded-full blur-3xl opacity-30 animate-pulse"
             style={{ background: topConfig.accent }}
           />
 
           <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-16 sm:py-20 text-center">
-            <div className="inline-flex items-center gap-2 glass-dark rounded-full px-4 py-2 mb-6">
-              <span className="text-sm">&#x2728;</span>
+            <div className="inline-flex items-center gap-2 glass-dark rounded-full px-4 py-2 mb-6 animate-fade-in-up">
+              <span className="text-sm">✨</span>
               <span className="text-xs font-semibold text-indigo-200 tracking-wide">
                 Your Results Are In
               </span>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-4 tracking-tight">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-4 tracking-tight animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
               You&apos;re a{" "}
               <span
-                className="inline-block"
+                className="inline-block relative"
                 style={{ color: topConfig.accentLight }}
               >
                 {topConfig.title}
+                <div
+                  className="absolute inset-0 opacity-20 blur-xl -z-10"
+                  style={{ background: topConfig.accent }}
+                />
               </span>{" "}
               Explorer
             </h1>
-            <p className="text-lg text-indigo-200 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-lg text-indigo-200 max-w-2xl mx-auto leading-relaxed animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
               Based on your answers, careers in {topConfig.title.toLowerCase()} align best with your interests and strengths.
             </p>
           </div>
@@ -190,8 +249,21 @@ export default function QuizPage() {
           </div>
         </section>
 
+        {/* Score Breakdown */}
+        <section className="py-12 sm:py-16 bg-white">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6">
+            <h2 className="text-2xl font-extrabold text-gray-900 mb-8">Your Score Breakdown</h2>
+            <div className="grid sm:grid-cols-2 gap-8">
+              <ScoreBreakdownBar cluster="tech" score={scores.tech} />
+              <ScoreBreakdownBar cluster="business" score={scores.business} />
+              <ScoreBreakdownBar cluster="science" score={scores.science} />
+              <ScoreBreakdownBar cluster="creative" score={scores.creative} />
+            </div>
+          </div>
+        </section>
+
         {/* Results Content */}
-        <section className="py-12 sm:py-16">
+        <section className="py-12 sm:py-16 bg-white">
           <div className="max-w-4xl mx-auto px-4 sm:px-6">
             {results.map((result, idx) => (
               <div key={result.cluster} className="mb-10">
@@ -205,13 +277,14 @@ export default function QuizPage() {
                   </h2>
                 </div>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {result.careers.map((career) => {
+                  {result.careers.map((career, careerIdx) => {
                     const cluster = clusterConfigs[career.cluster];
                     return (
                       <Link
                         key={career.slug}
                         href={`/careers/${career.slug}`}
-                        className="group relative block rounded-xl bg-white border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
+                        className="group relative block rounded-xl bg-white border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 result-card-enter"
+                        style={{ animationDelay: `${careerIdx * 0.1}s` }}
                       >
                         <div
                           className="absolute left-0 top-0 bottom-0 w-[3px] opacity-60 group-hover:opacity-100 transition-opacity"
@@ -259,6 +332,13 @@ export default function QuizPage() {
               >
                 Browse All Career Paths
               </Link>
+              <div className="ml-auto">
+                <ShareButton
+                  url={shareUrl}
+                  title={`I'm a ${topConfig.title} Explorer`}
+                  prefilledMessage={shareMessage}
+                />
+              </div>
             </div>
           </div>
         </section>
@@ -267,6 +347,7 @@ export default function QuizPage() {
   }
 
   const question = questions[currentQuestion];
+  const optionLetters = ["A", "B", "C", "D"];
 
   return (
     <>
@@ -277,7 +358,7 @@ export default function QuizPage() {
 
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16 text-center">
           <div className="inline-flex items-center gap-2 glass-dark rounded-full px-4 py-2 mb-6">
-            <span className="text-sm">&#x1F9ED;</span>
+            <span className="text-sm">🧭</span>
             <span className="text-xs font-semibold text-indigo-200 tracking-wide">
               Career Quiz
             </span>
@@ -315,40 +396,49 @@ export default function QuizPage() {
       {/* Question */}
       <section className="py-8 sm:py-12">
         <div className="max-w-2xl mx-auto px-4 sm:px-6">
-          <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 mb-8 leading-snug">
-            {question.question}
-          </h2>
+          <div
+            className={`transition-opacity duration-300 ${fadeOut ? "opacity-0" : "opacity-100"}`}
+          >
+            <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 mb-8 leading-snug">
+              {question.question}
+            </h2>
 
-          <div className="space-y-3">
-            {question.options.map((option, idx) => (
-              <button
-                key={idx}
-                onClick={() => {
-                  setSelectedOption(idx);
-                  handleAnswer(option.clusters);
-                }}
-                className={`w-full text-left p-5 rounded-xl border-2 transition-all duration-200 ${
-                  selectedOption === idx
-                    ? "border-indigo-500 bg-indigo-50 shadow-md shadow-indigo-500/10"
-                    : "border-gray-100 bg-white hover:border-indigo-200 hover:bg-indigo-50/30 hover:shadow-sm"
-                }`}
-              >
-                <div className="flex items-start gap-4">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold transition-colors ${
-                      selectedOption === idx
-                        ? "bg-indigo-600 text-white"
-                        : "bg-gray-100 text-gray-500"
-                    }`}
-                  >
-                    {String.fromCharCode(65 + idx)}
+            <div className="space-y-3">
+              {question.options.map((option, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    setSelectedOption(idx);
+                    handleAnswer(option.clusters);
+                  }}
+                  className={`w-full text-left p-5 rounded-xl border-2 transition-all duration-200 transform ${
+                    selectedOption === idx
+                      ? "border-indigo-500 bg-indigo-50 shadow-md shadow-indigo-500/10 scale-[1.02]"
+                      : "border-gray-100 bg-white hover:border-indigo-200 hover:bg-indigo-50/30 hover:shadow-sm hover:scale-[1.02]"
+                  }`}
+                  style={{
+                    animation: !fadeOut ? `fade-in-up 0.4s ease-out forwards` : undefined,
+                    animationDelay: !fadeOut ? `${idx * 0.05}s` : undefined,
+                    opacity: !fadeOut ? undefined : 0,
+                  }}
+                >
+                  <div className="flex items-start gap-4">
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold transition-all ${
+                        selectedOption === idx
+                          ? "bg-indigo-600 text-white scale-110"
+                          : "bg-gray-100 text-gray-500"
+                      }`}
+                    >
+                      {optionLetters[idx]}
+                    </div>
+                    <span className="text-sm sm:text-base text-gray-700 leading-relaxed font-medium pt-1">
+                      {option.label}
+                    </span>
                   </div>
-                  <span className="text-sm sm:text-base text-gray-700 leading-relaxed font-medium pt-1">
-                    {option.label}
-                  </span>
-                </div>
-              </button>
-            ))}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </section>
