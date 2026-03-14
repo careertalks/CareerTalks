@@ -1,11 +1,12 @@
 ---
 title: "The Complete Digital Marketing Career Guide for Beginners"
 description: "Everything you need to know to start a career in digital marketing. Explore key disciplines like SEO, social media, content marketing, paid ads, and analytics with practical advice for beginners."
-date: "2025-06-18"
+date: "2026-03-07"
 readTime: "7 min read"
-tags: ["digital-marketing", "seo", "social-media", "career-guide"]
+tags: ["digital marketing", "seo", "social media", "career guide"]
 type: "guide"
 featured: true
+career: "digital-marketing"
 ---
 
 ## Why Digital Marketing Is a Great Career Choice

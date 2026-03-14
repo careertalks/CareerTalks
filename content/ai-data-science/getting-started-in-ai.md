@@ -1,11 +1,12 @@
 ---
 title: "Getting Started in AI & Data Science: A Beginner's Roadmap"
 description: "A comprehensive beginner's guide to launching your career in AI and data science. Learn the key skills, tools, and steps to break into one of the fastest-growing fields in tech."
-date: "2025-07-01"
+date: "2026-03-07"
 readTime: "7 min read"
-tags: ["ai", "data-science", "beginner", "roadmap"]
+tags: ["ai", "data science", "beginner", "roadmap"]
 type: "guide"
 featured: true
+career: "ai-data-science"
 ---
 
 ## Why AI & Data Science?

@@ -1,11 +1,12 @@
 ---
-title: "Top 5 AI & Data Science Roles to Watch in 2025"
-description: "Discover the five most in-demand AI and data science roles in 2025, including what each role involves, required skills, and salary expectations."
-date: "2025-06-20"
+title: "Top 5 AI & Data Science Roles to Watch in 2026"
+description: "Discover the five most in-demand AI and data science roles in 2026, including what each role involves, required skills, and salary expectations."
+date: "2026-03-08"
 readTime: "6 min read"
-tags: ["ai", "careers", "2025", "job-market"]
+tags: ["ai", "careers", "job market", "data science"]
 type: "article"
 featured: false
+career: "ai-data-science"
 ---
 
 ## The AI Job Market in 2025

@@ -1,11 +1,12 @@
 ---
-title: "How to Become a Software Developer in 2025 (No CS Degree Required)"
+title: "How to Become a Software Developer in 2026 (No CS Degree Required)"
 description: "A practical guide to becoming a software developer without a computer science degree. Learn about bootcamps, self-learning paths, portfolio building, and strategies for landing your first developer job."
-date: "2025-06-25"
+date: "2026-03-07"
 readTime: "8 min read"
-tags: ["software-development", "coding", "self-taught", "career-switch"]
+tags: ["software development", "coding", "self-taught", "career change"]
 type: "guide"
 featured: true
+career: "software-development"
 ---
 
 ## You Do Not Need a CS Degree
