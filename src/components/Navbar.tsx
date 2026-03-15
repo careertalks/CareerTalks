@@ -11,6 +11,7 @@ const navLinks = [
 ];
 
 const exploreTools = [
+  { icon: "🎯", name: "Career Assessment", href: "/assessment", description: "Personality + career match" },
   { icon: "🧭", name: "Career Quiz", href: "/quiz", description: "Find your career match" },
   { icon: "✨", name: "Zodiac Match", href: "/zodiac", description: "Your cosmic career" },
   { icon: "🎰", name: "Career Roulette", href: "/roulette", description: "Spin your destiny" },
@@ -18,6 +19,9 @@ const exploreTools = [
   { icon: "📚", name: "Career Pathways", href: "/duels", description: "Stream → career map" },
   { icon: "🧭", name: "Navigator", href: "/career-navigator", description: "Choose your path" },
   { icon: "🔍", name: "Explorer", href: "/career-explorer", description: "Filter & compare" },
+  { icon: "🎮", name: "Day in the Life", href: "/day-in-life", description: "Experience a career day" },
+  { icon: "👯", name: "Compatibility", href: "/compatibility", description: "Compare with a friend" },
+  { icon: "💰", name: "Salary Calculator", href: "/salary-calculator", description: "10-year projections" },
   { icon: "🏆", name: "Badges", href: "/badges", description: "Your achievements" },
 ];
 
@@ -71,7 +75,7 @@ export default function Navbar() {
                 <div
                   onMouseEnter={() => setExploreOpen(true)}
                   onMouseLeave={() => setExploreOpen(false)}
-                  className="absolute left-0 mt-0 w-96 bg-white rounded-lg shadow-xl border border-indigo-100/50 py-4 px-4 z-50"
+                  className="absolute left-0 mt-0 w-[480px] bg-white rounded-lg shadow-xl border border-indigo-100/50 py-4 px-4 z-50"
                 >
                   <div className="grid grid-cols-2 gap-3">
                     {exploreTools.map((tool) => (

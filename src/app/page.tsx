@@ -5,6 +5,7 @@ import CareerPathCard from "@/components/CareerPathCard";
 import ArticleCard from "@/components/ArticleCard";
 import NewsletterCTA from "@/components/NewsletterCTA";
 import CrossPromoStrip from "@/components/CrossPromoStrip";
+import InteractiveToolsShowcase from "@/components/InteractiveToolsShowcase";
 
 const clusterOrder: Cluster[] = ["tech", "business", "science", "creative"];
 
@@ -87,6 +88,9 @@ export default function Home() {
           </svg>
         </div>
       </section>
+
+      {/* ===== INTERACTIVE TOOLS SHOWCASE ===== */}
+      <InteractiveToolsShowcase />
 
       {/* ===== CAREER PATHS GRID ===== */}
       <section id="careers" className="py-16 sm:py-20">

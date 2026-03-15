@@ -89,6 +89,26 @@ export function getBadgeById(
       icon: "🔍",
       description: "Explored and compared careers",
     },
+    "assessment-master": {
+      name: "Assessment Master",
+      icon: "📊",
+      description: "Completed the Career Assessment",
+    },
+    "day-explorer": {
+      name: "Day Explorer",
+      icon: "🎬",
+      description: "Experienced a day in a career",
+    },
+    "compatibility-checker": {
+      name: "Compatibility Checker",
+      icon: "💕",
+      description: "Found your career compatibility match",
+    },
+    "salary-seeker": {
+      name: "Salary Seeker",
+      icon: "💰",
+      description: "Explored your career salary growth potential",
+    },
   };
 
   return badgeMap[badgeId] || null;

@@ -812,8 +812,9 @@ function ComparisonView({
         <div className="mt-8 flex justify-center">
           <ShareButton
             url={`${typeof window !== 'undefined' ? window.location.origin : ''}/career-explorer`}
-            title={`Comparing ${careers.map((c) => c.title).join(" vs ")} - Career Talk`}
-            prefilledMessage={`Comparing ${careers.map((c) => c.title).join(" vs ")}: which would you choose? 🔍`}
+            title={`Career Comparison: ${careers.map((c) => c.title).join(" vs ")}`}
+            description={`Comparing ${careers.length} careers side-by-side`}
+            prefilledMessage={`I'm comparing ${careers.map((c) => c.title).join(", ")} to find my perfect fit. Which career interests you most? 🎯`}
           />
         </div>
       </div>

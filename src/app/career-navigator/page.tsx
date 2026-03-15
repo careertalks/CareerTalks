@@ -274,7 +274,7 @@ export default function CareerNavigator() {
                 <ShareButton
                   url={`${typeof window !== 'undefined' ? window.location.origin : ''}/career-navigator`}
                   title={`I navigated to ${topCareer.config.title}! 🧭`}
-                  prefilledMessage={`Discover your career path with the Career Navigator and find your perfect match.`}
+                  prefilledMessage={`I took the Career Navigator and discovered ${topCareer.config.title} is my perfect match! 🎯 My match score: ${topCareer.score}%. Find yours:`}
                 />
               </div>
               <div className="flex items-center gap-4">
