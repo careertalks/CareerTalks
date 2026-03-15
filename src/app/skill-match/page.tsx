@@ -9,11 +9,11 @@ import ShareButton from "@/components/ShareButton";
 const SKILL_ORDER = [
   "problem-solving",
   "communication",
-  "collaboration",
   "creativity",
-  "analytical",
+  "data-analysis",
   "leadership",
   "technical",
+  "research",
   "adaptability",
 ];
 
