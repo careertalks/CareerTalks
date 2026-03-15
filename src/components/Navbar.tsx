@@ -15,7 +15,7 @@ const exploreTools = [
   { icon: "✨", name: "Zodiac Match", href: "/zodiac", description: "Your cosmic career" },
   { icon: "🎰", name: "Career Roulette", href: "/roulette", description: "Spin your destiny" },
   { icon: "💪", name: "Skill Match", href: "/skill-match", description: "Rate your skills" },
-  { icon: "⚔️", name: "Career Duels", href: "/duels", description: "Tournament bracket" },
+  { icon: "📚", name: "Career Pathways", href: "/duels", description: "Stream → career map" },
   { icon: "🧭", name: "Navigator", href: "/career-navigator", description: "Choose your path" },
   { icon: "🔍", name: "Explorer", href: "/career-explorer", description: "Filter & compare" },
   { icon: "🏆", name: "Badges", href: "/badges", description: "Your achievements" },
