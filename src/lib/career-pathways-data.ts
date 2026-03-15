@@ -58,7 +58,6 @@ export interface CareerProgression {
   slug: CareerSlug;
   stages: CareerStage[];
   fork: SpecializationFork;
-  topCompanies: { india: string[]; global: string[] };
   educationPath: { india: string; global: string };
 }
 
@@ -112,7 +111,7 @@ export const subjectStreams: SubjectStream[] = [
       "All sciences combined for maximum flexibility across engineering, medicine, and research",
     coreSubjects: ["Physics", "Chemistry", "Mathematics", "Biology"],
     optionalSubjects: ["Computer Science", "Psychology", "Biotechnology"],
-    entranceExams: ["JEE", "NEET", "BITSAT", "VITEEE", "AIIMS"],
+    entranceExams: ["JEE Main", "JEE Advanced", "NEET", "BITSAT", "VITEEE", "AIIMS"],
     careerPaths: [
       "ai-data-science",
       "software-development",
@@ -180,7 +179,7 @@ export const subjectStreams: SubjectStream[] = [
       "Philosophy",
       "Geography",
     ],
-    entranceExams: ["CLAT", "CUET", "NID Entrance", "NIFT Entrance", "UPSC"],
+    entranceExams: ["CLAT", "CUET", "UPSC"],
     careerPaths: [
       "law-legal",
       "education-social-work",
@@ -377,10 +376,6 @@ export const careerProgressions: CareerProgression[] = [
         },
       ],
     },
-    topCompanies: {
-      india: ["Amazon", "Google", "Microsoft", "Flipkart"],
-      global: ["OpenAI", "DeepMind", "Meta AI", "Tesla"],
-    },
     educationPath: {
       india: "B.Tech (CS/IT) → M.Tech in ML/AI or Data Science (IITB, IIITH)",
       global: "BS Computer Science → MS in Machine Learning or Data Science (Stanford, CMU, MIT)",
@@ -546,10 +541,6 @@ export const careerProgressions: CareerProgression[] = [
           ],
         },
       ],
-    },
-    topCompanies: {
-      india: ["Flipkart", "Amazon", "Microsoft", "Zomato"],
-      global: ["Google", "Meta", "Apple", "Stripe"],
     },
     educationPath: {
       india: "B.Tech (CS/IT) → internships and side projects; bootcamps optional",
@@ -718,10 +709,6 @@ export const careerProgressions: CareerProgression[] = [
           ],
         },
       ],
-    },
-    topCompanies: {
-      india: ["Paytm", "PhonePe", "CRED", "BharatPe"],
-      global: ["Stripe", "Square", "Revolut", "Robinhood"],
     },
     educationPath: {
       india: "B.Tech/B.Comm + Financial Certifications (CFA, FRM) or MBA Finance",
@@ -894,10 +881,6 @@ export const careerProgressions: CareerProgression[] = [
         },
       ],
     },
-    topCompanies: {
-      india: ["McKinsey", "Bain", "Boston Consulting Group", "Deloitte"],
-      global: ["Goldman Sachs", "Sequoia Capital", "Stripe", "Airbnb"],
-    },
     educationPath: {
       india: "B.Com/B.Tech → MBA from IIM/ISB",
       global: "Bachelor's degree → MBA from top business school",
@@ -1069,10 +1052,6 @@ export const careerProgressions: CareerProgression[] = [
         },
       ],
     },
-    topCompanies: {
-      india: ["ReNew Power", "Avaada Energy", "Sprout India", "Exxaro Resources"],
-      global: ["NextEra Energy", "Tesla Energy", "Brookfield Renewable", "Ørsted"],
-    },
     educationPath: {
       india: "B.Tech (Civil/Mechanical/Electrical) → MSc Environmental Science or MBA Sustainability",
       global: "BS Environmental Science/Engineering → MS Renewable Energy or MBA Sustainability",
@@ -1240,10 +1219,6 @@ export const careerProgressions: CareerProgression[] = [
           ],
         },
       ],
-    },
-    topCompanies: {
-      india: ["Jio (Reliance)", "Airtel", "Vodafone Idea", "Ericsson India"],
-      global: ["Verizon", "AT&T", "Deutsche Telekom", "Nokia"],
     },
     educationPath: {
       india: "B.Tech (Electronics/ECE/IT) → specialization in telecom networks or M.Tech",
@@ -1413,10 +1388,6 @@ export const careerProgressions: CareerProgression[] = [
         },
       ],
     },
-    topCompanies: {
-      india: ["Cipla", "Dr. Reddy's Labs", "Serum Institute of India", "Lupin"],
-      global: ["Pfizer", "Moderna", "Roche", "Amgen"],
-    },
     educationPath: {
       india: "B.Pharm or B.Tech (Biotech) → M.Pharm or PhD in relevant field",
       global: "BS Biology/Biochemistry → MS/PhD in Pharmacology or Molecular Biology",
@@ -1584,10 +1555,6 @@ export const careerProgressions: CareerProgression[] = [
           ],
         },
       ],
-    },
-    topCompanies: {
-      india: ["Maruti Suzuki", "Mahindra & Mahindra", "Tata Motors", "Bajaj Auto"],
-      global: ["Tesla", "BMW", "Porsche", "Ferrari"],
     },
     educationPath: {
       india: "B.Tech (Mechanical/Automobile Engineering) → internships at OEMs",
@@ -1757,10 +1724,6 @@ export const careerProgressions: CareerProgression[] = [
         },
       ],
     },
-    topCompanies: {
-      india: ["Amazon India", "Flipkart", "Reliance Retail", "Future Group"],
-      global: ["Walmart", "Target", "Amazon", "DHL"],
-    },
     educationPath: {
       india: "B.Com or B.Tech → MBA in Operations or Supply Chain Management",
       global: "Bachelor's degree → MBA in Supply Chain or Operations",
@@ -1928,10 +1891,6 @@ export const careerProgressions: CareerProgression[] = [
           ],
         },
       ],
-    },
-    topCompanies: {
-      india: ["HubSpot", "Google India", "Facebook India", "Oyo"],
-      global: ["Google", "Meta", "Amazon", "Netflix"],
     },
     educationPath: {
       india: "B.Com or B.Tech → Digital Marketing Certifications (Google, HubSpot, Facebook)",
@@ -2101,10 +2060,6 @@ export const careerProgressions: CareerProgression[] = [
         },
       ],
     },
-    topCompanies: {
-      india: ["Flipkart", "Amazon", "Zomato", "Airbnb"],
-      global: ["Google", "Meta", "Apple", "Netflix"],
-    },
     educationPath: {
       india: "B.Tech or B.Com → Internships in product roles; MBA optional but helpful",
       global: "Bachelor's degree → Product Manager internships; MBA from top school optional",
@@ -2273,10 +2228,6 @@ export const careerProgressions: CareerProgression[] = [
         },
       ],
     },
-    topCompanies: {
-      india: ["DLF", "Lodha", "Prestige Group", "Brigade Group"],
-      global: ["CBRE", "Cushman & Wakefield", "JLL", "Berkshire Hathaway"],
-    },
     educationPath: {
       india: "B.Com/B.Tech → Real Estate Management Diploma or MBA in Real Estate",
       global: "Bachelor's degree → MBA in Real Estate or Real Estate Finance",
@@ -2444,10 +2395,6 @@ export const careerProgressions: CareerProgression[] = [
           ],
         },
       ],
-    },
-    topCompanies: {
-      india: ["Cyril Amarchand Mangaldas", "Trilegal", "AZB & Partners", "Shardul Amarchand"],
-      global: ["Baker McKenzie", "DLA Piper", "Sullivan & Cromwell", "Wachtell Lipton"],
     },
     educationPath: {
       india: "LLB (5-year integrated or 3-year after 12th) → Internships at law firms",
@@ -2620,10 +2567,6 @@ export const careerProgressions: CareerProgression[] = [
         },
       ],
     },
-    topCompanies: {
-      india: ["Sabyasachi", "Anita Dongre", "Ajio", "Nykaa Fashion"],
-      global: ["LVMH", "Hermès", "Gucci", "Adidas Design Studio"],
-    },
     educationPath: {
       india: "Bachelor's in Fashion Design (NIFT, Pearl Academy) → Internships at design houses",
       global: "BFA Fashion Design (Parsons, FIT, Central Saint Martins) → Design studio internships",
@@ -2792,10 +2735,6 @@ export const careerProgressions: CareerProgression[] = [
         },
       ],
     },
-    topCompanies: {
-      india: ["Accenture India", "Google India", "Microsoft India", "Amazon India"],
-      global: ["McKinsey", "Google", "Amazon", "Salesforce"],
-    },
     educationPath: {
       india: "B.Com/B.A. → MBA HR or PGDM HR from XLRI/FLAME",
       global: "Bachelor's degree → MBA or Master's in Human Resources",
@@ -2958,10 +2897,6 @@ export const careerProgressions: CareerProgression[] = [
           ],
         },
       ],
-    },
-    topCompanies: {
-      india: ["NRIPL", "Hafeez Contractor & Associates", "Malik Architecture", "Morphogenesis"],
-      global: ["Zaha Hadid Architects", "OMA", "SOM", "Gensler"],
     },
     educationPath: {
       india: "B.Arch (5-year) from NID/CEPT → Internships at architecture firms",
@@ -3131,10 +3066,6 @@ export const careerProgressions: CareerProgression[] = [
         },
       ],
     },
-    topCompanies: {
-      india: ["Apollo Hospitals", "Max Healthcare", "Fortis Healthcare", "Narayana Health"],
-      global: ["Mayo Clinic", "Cleveland Clinic", "Kaiser Permanente", "CVS Health"],
-    },
     educationPath: {
       india: "B.Sc (Health Management) or MBA Healthcare Management",
       global: "Bachelor's degree + MBA in Healthcare Management or MHA",
@@ -3303,10 +3234,6 @@ export const careerProgressions: CareerProgression[] = [
         },
       ],
     },
-    topCompanies: {
-      india: ["Taj Hotels", "ITC Hotels", "Oberoi Group", "Marriott India"],
-      global: ["Four Seasons", "Ritz-Carlton", "Hilton", "Marriott International"],
-    },
     educationPath: {
       india: "Bachelor's in Hotel Management (IHM, IHMR) or Diploma",
       global: "Bachelor's or Associate degree in Hospitality Management",
@@ -3474,10 +3401,6 @@ export const careerProgressions: CareerProgression[] = [
           ],
         },
       ],
-    },
-    topCompanies: {
-      india: ["Teach for India", "Akshara Foundation", "NASSCOM Foundation", "Pratham"],
-      global: ["Khan Academy", "Coursera", "EdX", "Teach for America"],
     },
     educationPath: {
       india: "B.Ed or B.A. + Social Science → M.Ed or MSW for advanced roles",
@@ -3649,10 +3572,6 @@ export const careerProgressions: CareerProgression[] = [
           ],
         },
       ],
-    },
-    topCompanies: {
-      india: ["RK Studios", "Excel Entertainment", "Bollywood Companies", "Disney Hotstar"],
-      global: ["Pixar", "Disney", "Netflix Studios", "A24"],
     },
     educationPath: {
       india: "Bachelor's in Fine Arts, Film, Animation, or Design + Portfolio development",

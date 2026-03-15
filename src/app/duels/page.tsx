@@ -350,25 +350,6 @@ export default function CareerPathwaysPage() {
           </div>
         </div>
 
-        {/* Top Companies */}
-        {currentCareer && (
-          <div className="mb-12">
-            <h3 className="mb-4 text-lg font-extrabold text-gray-900">
-              Top Companies Hiring
-            </h3>
-            <div className="flex flex-wrap gap-3">
-              {currentCareer.topCompanies[context].map((company) => (
-                <span
-                  key={company}
-                  className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm"
-                >
-                  {company}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Timeline */}
         {currentCareer && (
           <div className="relative mb-16">
@@ -386,6 +367,7 @@ export default function CareerPathwaysPage() {
                   stage={stage}
                   clusterAccent={currentCluster?.accent || "#3B82F6"}
                   isFirst={idx === 0}
+                  context={context}
                 />
               ))}
 
@@ -408,6 +390,7 @@ export default function CareerPathwaysPage() {
                       stage={stage}
                       clusterAccent={currentCluster?.accent || "#3B82F6"}
                       isFirst={false}
+                      context={context}
                     />
                   ))}
                   <button
@@ -442,10 +425,12 @@ function TimelineStage({
   stage,
   clusterAccent,
   isFirst,
+  context,
 }: {
   stage: CareerStage;
   clusterAccent: string;
   isFirst: boolean;
+  context: ProgressionContext;
 }) {
   return (
     <div className="relative pl-24">
@@ -465,7 +450,7 @@ function TimelineStage({
         </div>
 
         <p className="mt-4 text-3xl font-extrabold" style={{ color: clusterAccent }}>
-          {stage.salary.india}
+          {stage.salary[context]}
         </p>
 
         <div className="mt-4 space-y-3">
