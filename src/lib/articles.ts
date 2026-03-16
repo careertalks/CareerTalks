@@ -20,6 +20,7 @@ export interface ArticleMeta {
   type: "article" | "guide" | "interview" | "resource";
   featured?: boolean;
   career?: CareerSlug;
+  image?: string;
 }
 
 export interface Article extends ArticleMeta {
@@ -52,6 +53,7 @@ export function getArticlesByCategory(category: ContentCategory): ArticleMeta[] 
       type: data.type || "article",
       featured: data.featured || false,
       career: data.career,
+      image: data.image,
     } as ArticleMeta;
   });
 
@@ -85,6 +87,7 @@ export async function getArticleBySlug(
     type: data.type || "article",
     featured: data.featured || false,
     career: data.career,
+    image: data.image,
     contentHtml,
   };
 }

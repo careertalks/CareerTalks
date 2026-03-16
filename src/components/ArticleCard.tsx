@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { ArticleMeta } from "@/lib/articles";
 import { careerConfigs, clusterConfigs } from "@/lib/career-config";
 import type { CareerSlug } from "@/lib/career-config";
@@ -37,23 +38,42 @@ export default function ArticleCard({ article }: ArticleCardProps) {
 
   return (
     <Link href={href} className="card-hover group block rounded-xl overflow-hidden bg-white border border-gray-100">
-      {/* Gradient thumbnail area */}
-      <div className={`relative h-40 bg-gradient-to-br ${gradientFrom} ${gradientTo} flex items-end p-4`}>
+      {/* Thumbnail area — image or gradient fallback */}
+      <div className="relative h-44 overflow-hidden">
+        {article.image ? (
+          <>
+            <Image
+              src={article.image}
+              alt={article.title}
+              fill
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            />
+            {/* Subtle gradient overlay for text readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+          </>
+        ) : (
+          <div className={`absolute inset-0 bg-gradient-to-br ${gradientFrom} ${gradientTo}`}>
+            {/* Decorative circles for gradient fallback */}
+            <div className="absolute top-6 right-6 w-24 h-24 rounded-full bg-white/10" />
+            <div className="absolute bottom-4 right-12 w-16 h-16 rounded-full bg-white/5" />
+          </div>
+        )}
+
         {/* Type badge */}
-        <div className="absolute top-3 left-3">
-          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${badgeClass}`}>
+        <div className="absolute top-3 left-3 z-10">
+          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+            article.image ? "bg-white/90 text-gray-700 shadow-sm" : badgeClass
+          }`}>
             {typeLabels[article.type]}
           </span>
         </div>
         {/* Read time */}
-        <div className="absolute top-3 right-3">
+        <div className="absolute top-3 right-3 z-10">
           <span className="text-xs font-medium text-white/90 bg-black/20 backdrop-blur-sm px-2.5 py-1 rounded-full">
             {article.readTime}
           </span>
         </div>
-        {/* Decorative circles */}
-        <div className="absolute top-6 right-6 w-24 h-24 rounded-full bg-white/10" />
-        <div className="absolute bottom-4 right-12 w-16 h-16 rounded-full bg-white/5" />
       </div>
 
       {/* Content */}
