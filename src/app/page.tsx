@@ -5,7 +5,7 @@ import CareerPathCard from "@/components/CareerPathCard";
 import ArticleCard from "@/components/ArticleCard";
 import NewsletterCTA from "@/components/NewsletterCTA";
 import CrossPromoStrip from "@/components/CrossPromoStrip";
-import InteractiveToolsShowcase from "@/components/InteractiveToolsShowcase";
+
 
 const clusterOrder: Cluster[] = ["tech", "business", "science", "creative"];
 
@@ -89,8 +89,50 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== INTERACTIVE TOOLS SHOWCASE ===== */}
-      <InteractiveToolsShowcase />
+      {/* ===== TOOLS & GAMES CTA ===== */}
+      <section className="py-12 sm:py-16 bg-gradient-to-b from-indigo-950 to-gray-900 relative overflow-hidden">
+        <div className="absolute inset-0 dot-pattern opacity-20" />
+        <div className="absolute top-10 right-10 w-64 h-64 bg-violet-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 left-10 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl" />
+
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 text-center">
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-3">
+            Discover Your Career —{" "}
+            <span className="bg-gradient-to-r from-indigo-400 via-violet-400 to-indigo-400 bg-clip-text text-transparent">
+              Play, Explore, Share
+            </span>
+          </h2>
+          <p className="text-lg text-indigo-200 mb-8 max-w-2xl mx-auto">
+            11 free interactive tools — assessments, simulations, calculators, and games
+            to help you find your perfect career match.
+          </p>
+
+          {/* Quick preview of 4 featured tools */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8 max-w-2xl mx-auto">
+            {[
+              { emoji: "🎯", name: "Assessment" },
+              { emoji: "🎮", name: "Day in the Life" },
+              { emoji: "👯", name: "Compatibility" },
+              { emoji: "💰", name: "Salary Calc" },
+            ].map((t) => (
+              <div
+                key={t.name}
+                className="glass-dark rounded-xl px-3 py-3 border border-indigo-500/20"
+              >
+                <div className="text-2xl mb-1">{t.emoji}</div>
+                <div className="text-xs font-semibold text-indigo-200">{t.name}</div>
+              </div>
+            ))}
+          </div>
+
+          <Link
+            href="/tools"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-white text-indigo-700 font-bold rounded-xl shadow-lg shadow-white/10 hover:shadow-xl hover:shadow-white/20 transition-all hover:-translate-y-0.5 text-lg"
+          >
+            Explore All 11 Tools →
+          </Link>
+        </div>
+      </section>
 
       {/* ===== CAREER PATHS GRID ===== */}
       <section id="careers" className="py-16 sm:py-20">
