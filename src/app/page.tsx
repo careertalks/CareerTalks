@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { clusterConfigs, getCareersByCluster, type Cluster } from "@/lib/career-config";
 import { getLatestArticles } from "@/lib/articles";
-import CareerPathCard from "@/components/CareerPathCard";
 import ArticleCard from "@/components/ArticleCard";
 import NewsletterCTA from "@/components/NewsletterCTA";
 import CrossPromoStrip from "@/components/CrossPromoStrip";
-
+import CareerPathsSection from "@/components/CareerPathsSection";
 
 const clusterOrder: Cluster[] = ["tech", "business", "science", "creative"];
 
@@ -134,50 +133,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== CAREER PATHS GRID ===== */}
-      <section id="careers" className="py-16 sm:py-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-3">
-              Choose Your Career Path
-            </h2>
-            <p className="text-gray-500 max-w-lg mx-auto">
-              Explore 20 industries organized into four clusters. Each path comes with guides, insights, and resources.
-            </p>
-          </div>
-
-          {clusterOrder.map((clusterId) => {
-            const cluster = clusterConfigs[clusterId];
-            const careers = getCareersByCluster(clusterId);
-
-            return (
-              <div key={clusterId} className="mb-10">
-                {/* Cluster header */}
-                <div className="flex items-center gap-3 mb-4 pb-3 border-b border-gray-100">
-                  <span className={`w-2.5 h-2.5 rounded-full ${cluster.dotClass}`} />
-                  <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider">
-                    {cluster.title}
-                  </h3>
-                  <span className="text-xs text-gray-400 bg-gray-50 px-2.5 py-0.5 rounded-full">
-                    {careers.length} paths
-                  </span>
-                </div>
-
-                {/* Career cards grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {careers.map((career) => (
-                    <CareerPathCard
-                      key={career.slug}
-                      career={career}
-                      cluster={cluster}
-                    />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
+      {/* ===== CAREER PATHS (TABBED) ===== */}
+      <CareerPathsSection
+        clusters={clusterOrder.map((clusterId) => ({
+          cluster: clusterConfigs[clusterId],
+          careers: getCareersByCluster(clusterId),
+        }))}
+      />
 
       {/* ===== HOW IT WORKS ===== */}
       <section className="py-16 bg-gray-50/50">
