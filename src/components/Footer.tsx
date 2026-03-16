@@ -19,9 +19,26 @@ const businessCareers = [
   { label: "Hospitality", href: "/careers/hospitality-management" },
 ];
 
+const scienceCareers = [
+  { label: "BioTech & Pharma", href: "/careers/biotech-pharma" },
+  { label: "Clean Tech & Green Energy", href: "/careers/clean-tech" },
+  { label: "Healthcare Management", href: "/careers/healthcare-management" },
+  { label: "Automotive", href: "/careers/automotive" },
+];
+
+const creativeCareers = [
+  { label: "Law & Legal", href: "/careers/law-legal" },
+  { label: "Fashion Design & Tech", href: "/careers/fashion-design" },
+  { label: "Human Resources", href: "/careers/human-resources" },
+  { label: "Architecture & Planning", href: "/careers/architecture-planning" },
+  { label: "Education & Social Work", href: "/careers/education-social-work" },
+  { label: "Creative Arts & Design", href: "/careers/creative-arts" },
+];
+
 const resources = [
+  { label: "Tools & Games", href: "/tools" },
+  { label: "Career Assessment", href: "/assessment" },
   { label: "Blog", href: "/blog" },
-  { label: "Career Quiz", href: "/quiz" },
   { label: "About", href: "/about" },
   { label: "FAQ", href: "/faq" },
   { label: "Privacy Policy", href: "/privacy" },
@@ -42,11 +59,11 @@ export default function Footer() {
 
   return (
     <footer className="bg-gray-950 text-gray-400">
-      {/* Main footer grid */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-8">
-          {/* Brand column */}
-          <div className="sm:col-span-2 lg:col-span-1">
+      {/* Main footer */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
+        {/* Top: Brand + Newsletter */}
+        <div className="flex flex-col lg:flex-row items-start justify-between gap-8 mb-14">
+          <div className="max-w-md">
             <Link href="/" className="flex items-center gap-2.5 mb-4">
               <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center">
                 <span className="text-white font-bold text-sm tracking-tight">CT</span>
@@ -56,76 +73,14 @@ export default function Footer() {
                 <span className="text-violet-400">Talks</span>
               </span>
             </Link>
-            <p className="text-sm leading-relaxed mb-4 text-gray-500">
-              Comprehensive career guidance for 20+ industries. Interactive guides, skill roadmaps, and expert insights to help you find your path.
+            <p className="text-sm leading-relaxed text-gray-500">
+              Comprehensive career guidance for 20+ industries across Tech, Business, Science, and Creative tracks. Interactive tools, skill roadmaps, and expert insights to help you find your path.
             </p>
-            <a
-              href="mailto:hello@careertalks.space"
-              className="text-sm text-violet-400 hover:text-violet-300 transition-colors"
-            >
-              hello@careertalks.space
-            </a>
           </div>
 
-          {/* Tech & Data careers */}
-          <div>
-            <h4 className="text-xs font-semibold text-violet-400 uppercase tracking-widest mb-4">
-              Tech & Data
-            </h4>
-            <ul className="space-y-2.5">
-              {techCareers.map((item) => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className="text-sm text-gray-500 hover:text-white transition-colors"
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Business careers */}
-          <div>
-            <h4 className="text-xs font-semibold text-violet-400 uppercase tracking-widest mb-4">
-              Business
-            </h4>
-            <ul className="space-y-2.5">
-              {businessCareers.map((item) => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className="text-sm text-gray-500 hover:text-white transition-colors"
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Resources */}
-          <div>
-            <h4 className="text-xs font-semibold text-violet-400 uppercase tracking-widest mb-4">
-              Resources
-            </h4>
-            <ul className="space-y-2.5 mb-8">
-              {resources.map((item) => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className="text-sm text-gray-500 hover:text-white transition-colors"
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-
-            {/* Newsletter signup */}
+          <div className="w-full lg:w-auto lg:min-w-[340px]">
             <h4 className="text-xs font-semibold text-violet-400 uppercase tracking-widest mb-3">
-              Newsletter
+              Stay Updated
             </h4>
             {subscribed ? (
               <p className="text-sm text-emerald-400">Thanks for subscribing!</p>
@@ -149,17 +104,128 @@ export default function Footer() {
             )}
           </div>
         </div>
+
+        {/* Divider */}
+        <div className="border-t border-gray-800/60 mb-12" />
+
+        {/* Career columns + Resources */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 lg:gap-6">
+          {/* Tech & Data */}
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-widest mb-4">
+              <span className="text-blue-400">Tech & Data</span>
+            </h4>
+            <ul className="space-y-2.5">
+              {techCareers.map((item) => (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className="text-sm text-gray-500 hover:text-white transition-colors"
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Business & Commerce */}
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-widest mb-4">
+              <span className="text-amber-400">Business</span>
+            </h4>
+            <ul className="space-y-2.5">
+              {businessCareers.map((item) => (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className="text-sm text-gray-500 hover:text-white transition-colors"
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Science & Health */}
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-widest mb-4">
+              <span className="text-emerald-400">Science & Health</span>
+            </h4>
+            <ul className="space-y-2.5">
+              {scienceCareers.map((item) => (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className="text-sm text-gray-500 hover:text-white transition-colors"
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* People & Creative */}
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-widest mb-4">
+              <span className="text-rose-400">People & Creative</span>
+            </h4>
+            <ul className="space-y-2.5">
+              {creativeCareers.map((item) => (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className="text-sm text-gray-500 hover:text-white transition-colors"
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Resources */}
+          <div>
+            <h4 className="text-xs font-semibold text-violet-400 uppercase tracking-widest mb-4">
+              Resources
+            </h4>
+            <ul className="space-y-2.5">
+              {resources.map((item) => (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className="text-sm text-gray-500 hover:text-white transition-colors"
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
       </div>
 
       {/* Bottom bar */}
       <div className="border-t border-gray-800/50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-xs text-gray-600">
             &copy; {new Date().getFullYear()} CareerTalks. All rights reserved.
           </p>
-          <p className="text-xs text-gray-600">
-            We empower <span className="text-violet-400 font-medium">YOU</span> to find your career path.
-          </p>
+          <div className="flex items-center gap-1.5 text-xs text-gray-600">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500" />
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500" />
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-rose-500" />
+            <span className="ml-1">20 career paths to explore</span>
+          </div>
+          <a
+            href="mailto:hello@careertalks.space"
+            className="text-xs text-violet-400 hover:text-violet-300 transition-colors"
+          >
+            hello@careertalks.space
+          </a>
         </div>
       </div>
     </footer>

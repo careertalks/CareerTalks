@@ -35,7 +35,7 @@ export default function CareerPathsSection({ clusters }: CareerPathsSectionProps
           <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-3">
             Choose Your Career Path
           </h2>
-          <p className="text-gray-500 max-w-lg mx-auto">
+          <p className="text-gray-500 max-w-xl mx-auto">
             Explore 20 industries organized into four clusters. Each path comes
             with guides, insights, and resources.
           </p>
