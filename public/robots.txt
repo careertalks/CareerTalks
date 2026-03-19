@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://www.careertalks.space/sitemap.xml
+Sitemap: https://careertalks.space/sitemap.xml

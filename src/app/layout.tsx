@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://www.careertalks.space",
+    url: "https://careertalks.space",
     siteName: "CareerTalks",
     title: "CareerTalks | Shape Your Tomorrow, Today",
     description:
