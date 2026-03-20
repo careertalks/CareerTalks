@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 const techCareers = [
   { label: "AI & Data Science", href: "/careers/ai-data-science" },
@@ -65,9 +66,13 @@ export default function Footer() {
         <div className="flex flex-col lg:flex-row items-start justify-between gap-8 mb-14">
           <div className="max-w-md">
             <Link href="/" className="flex items-center gap-2.5 mb-4">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center">
-                <span className="text-white font-bold text-sm tracking-tight">CT</span>
-              </div>
+              <Image
+                src="/images/ct-logo.svg"
+                alt="CareerTalks"
+                width={36}
+                height={36}
+                className="rounded-lg"
+              />
               <span className="text-lg font-bold tracking-tight">
                 <span className="text-white">Career</span>
                 <span className="text-violet-400">Talks</span>

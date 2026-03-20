@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 const navLinks = [
   { label: "Careers", href: "/#careers" },
@@ -20,9 +21,13 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
-              <span className="text-white font-bold text-sm tracking-tight">CT</span>
-            </div>
+            <Image
+              src="/images/ct-logo.svg"
+              alt="CareerTalks"
+              width={36}
+              height={36}
+              className="rounded-lg shadow-md group-hover:shadow-lg transition-shadow"
+            />
             <span className="text-lg font-bold tracking-tight">
               <span className="text-slate-900">Career</span>
               <span className="text-violet-600">Talks</span>
