@@ -37,6 +37,9 @@ export const metadata: Metadata = {
     title: "CareerTalks",
     description: "Free career guidance for students and young professionals.",
   },
+  alternates: {
+    canonical: "https://careertalks.space",
+  },
   robots: {
     index: true,
     follow: true,
