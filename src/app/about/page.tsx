@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import NewsletterCTA from "@/components/NewsletterCTA";
-import CrossPromoStrip from "@/components/CrossPromoStrip";
+
 import { ecosystem, buildUtmUrl } from "@/lib/ecosystem-config";
 
 export const metadata: Metadata = {
@@ -149,11 +149,6 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
-
-      {/* Cross-promo */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
-        <CrossPromoStrip index={0} />
-      </div>
 
       {/* Newsletter */}
       <section className="py-12 bg-gray-50/50">

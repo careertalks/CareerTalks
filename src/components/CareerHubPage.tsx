@@ -4,7 +4,7 @@ import { careerConfigs, clusterConfigs, getClusterForCareer, getCareersByCluster
 import { getArticlesByCategory } from "@/lib/articles";
 import ArticleCard from "./ArticleCard";
 import NewsletterCTA from "./NewsletterCTA";
-import CrossPromoStrip from "./CrossPromoStrip";
+
 
 export default function CareerHubPage({ career: careerSlug }: { career: CareerSlug }) {
   const career = careerConfigs[careerSlug];
@@ -123,11 +123,6 @@ export default function CareerHubPage({ career: careerSlug }: { career: CareerSl
         </section>
       )}
 
-      {/* Cross-promo between sections */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
-        <CrossPromoStrip index={0} />
-      </div>
-
       {/* ===== ALL ARTICLES ===== */}
       <section className="py-12 sm:py-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -205,11 +200,6 @@ export default function CareerHubPage({ career: careerSlug }: { career: CareerSl
           </div>
         </section>
       )}
-
-      {/* Cross-promo */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
-        <CrossPromoStrip index={1} />
-      </div>
 
       {/* ===== NEWSLETTER CTA ===== */}
       <section className="py-12">

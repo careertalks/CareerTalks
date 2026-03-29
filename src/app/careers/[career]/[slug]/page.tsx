@@ -6,7 +6,7 @@ import { careerConfigs, clusterConfigs } from "@/lib/career-config";
 import type { CareerSlug } from "@/lib/career-config";
 import NewsletterCTA from "@/components/NewsletterCTA";
 import ShareButton from "@/components/ShareButton";
-import CrossPromoStrip from "@/components/CrossPromoStrip";
+
 import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
 import RelatedArticles from "@/components/RelatedArticles";
 
@@ -157,11 +157,6 @@ export default async function ArticlePage({
 
       {/* Related Articles */}
       <RelatedArticles career={career as CareerSlug} currentSlug={slug} />
-
-      {/* Cross-promo */}
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
-        <CrossPromoStrip index={1} />
-      </div>
 
       {/* Newsletter CTA */}
       <section className="py-12 bg-gray-50/50">

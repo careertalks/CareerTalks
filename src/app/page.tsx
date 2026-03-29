@@ -3,7 +3,7 @@ import { clusterConfigs, getCareersByCluster, type Cluster } from "@/lib/career-
 import { getLatestArticles } from "@/lib/articles";
 import ArticleCard from "@/components/ArticleCard";
 import NewsletterCTA from "@/components/NewsletterCTA";
-import CrossPromoStrip from "@/components/CrossPromoStrip";
+
 import CareerPathsSection from "@/components/CareerPathsSection";
 
 const clusterOrder: Cluster[] = ["tech", "business", "science", "creative"];
@@ -247,10 +247,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== CROSS PROMO ===== */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
-        <CrossPromoStrip index={0} />
-      </div>
     </>
   );
 }

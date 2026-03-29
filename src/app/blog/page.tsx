@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getArticlesByCategory } from "@/lib/articles";
 import ArticleCard from "@/components/ArticleCard";
 import NewsletterCTA from "@/components/NewsletterCTA";
-import CrossPromoStrip from "@/components/CrossPromoStrip";
+
 
 export const metadata: Metadata = {
   title: "Blog",
@@ -90,11 +90,6 @@ export default function BlogPage() {
           )}
         </div>
       </section>
-
-      {/* Cross-promo */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
-        <CrossPromoStrip index={0} />
-      </div>
 
       {/* Newsletter */}
       <section className="py-12">

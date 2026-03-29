@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import NewsletterCTA from "@/components/NewsletterCTA";
-import CrossPromoStrip from "@/components/CrossPromoStrip";
+
 import { FAQPageJsonLd } from "@/components/JsonLd";
 
 const faqs = [
@@ -150,11 +150,6 @@ export default function FAQPage() {
           </div>
         </div>
       </section>
-
-      {/* Cross-promo */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
-        <CrossPromoStrip index={0} />
-      </div>
 
       {/* Newsletter */}
       <section className="py-12 bg-gray-50/50">
