@@ -33,6 +33,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# newsletter tracking
+.last-sent-articles.json
+
 # vercel
 .vercel
 
