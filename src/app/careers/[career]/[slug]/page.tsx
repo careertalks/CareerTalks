@@ -8,6 +8,7 @@ import NewsletterCTA from "@/components/NewsletterCTA";
 import ShareButton from "@/components/ShareButton";
 import CrossPromoStrip from "@/components/CrossPromoStrip";
 import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
+import RelatedArticles from "@/components/RelatedArticles";
 
 export async function generateStaticParams() {
   const params: { career: string; slug: string }[] = [];
@@ -35,12 +36,16 @@ export async function generateMetadata({
   return {
     title: article.title,
     description: article.description,
+    keywords: article.tags,
+    alternates: {
+      canonical: `https://careertalks.space/careers/${career}/${slug}`,
+    },
     openGraph: {
       title: article.title,
       description: article.description,
       type: "article",
       publishedTime: article.date,
-      url: `https://www.careertalks.space/careers/${career}/${slug}`,
+      url: `https://careertalks.space/careers/${career}/${slug}`,
     },
   };
 }
@@ -59,7 +64,7 @@ export default async function ArticlePage({
   if (!article) notFound();
 
   const cluster = clusterConfigs[careerConfig.cluster];
-  const articleUrl = `https://www.careertalks.space/careers/${career}/${slug}`;
+  const articleUrl = `https://careertalks.space/careers/${career}/${slug}`;
 
   return (
     <>
@@ -149,6 +154,9 @@ export default async function ArticlePage({
           />
         </div>
       </article>
+
+      {/* Related Articles */}
+      <RelatedArticles career={career as CareerSlug} currentSlug={slug} />
 
       {/* Cross-promo */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">

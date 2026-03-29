@@ -46,7 +46,7 @@ export const ecosystem: Record<string, EcosystemProject> = {
     id: "ct",
     name: "CareerTalks",
     shortName: "CT",
-    url: "https://www.careertalks.space",
+    url: "https://careertalks.space",
     icon: "\u{1F3AF}",
     tagline: "20 career paths explored for the next generation \u2014 CareerTalks",
     description: "Interactive career guides, industry insights, and skill maps \u2014 helping teens and young adults find their path.",

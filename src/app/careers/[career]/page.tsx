@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { careerConfigs, getAllCareerSlugs, clusterConfigs } from "@/lib/career-config";
 import type { CareerSlug } from "@/lib/career-config";
 import CareerHubPage from "@/components/CareerHubPage";
-import { BreadcrumbJsonLd } from "@/components/JsonLd";
+import { BreadcrumbJsonLd, OccupationJsonLd } from "@/components/JsonLd";
 
 export async function generateStaticParams() {
   return getAllCareerSlugs().map((slug) => ({ career: slug }));
@@ -32,6 +32,9 @@ export async function generateMetadata({
       "career guidance",
       "career path",
     ],
+    alternates: {
+      canonical: `https://careertalks.space/careers/${career}`,
+    },
     openGraph: {
       title: `${config.title} Career Path | CareerTalks`,
       description: config.description,
@@ -52,13 +55,22 @@ export default async function CareerPage({
     notFound();
   }
 
+  const config = careerConfigs[career as CareerSlug];
+
   return (
     <>
       <BreadcrumbJsonLd
         items={[
           { name: "Home", href: "/" },
-          { name: careerConfigs[career as CareerSlug].title, href: `/careers/${career}` },
+          { name: config.title, href: `/careers/${career}` },
         ]}
+      />
+      <OccupationJsonLd
+        name={config.title}
+        description={config.heroDescription}
+        salary={config.stats.avgSalary.replace("$", "").replace(",", "")}
+        growthRate={config.stats.growthRate}
+        skills={config.stats.topRoles}
       />
       <CareerHubPage career={career as CareerSlug} />
     </>

@@ -25,12 +25,16 @@ export async function generateMetadata({
   return {
     title: article.title,
     description: article.description,
+    keywords: article.tags,
+    alternates: {
+      canonical: `https://careertalks.space/blog/${slug}`,
+    },
     openGraph: {
       title: article.title,
       description: article.description,
       type: "article",
       publishedTime: article.date,
-      url: `https://www.careertalks.space/blog/${slug}`,
+      url: `https://careertalks.space/blog/${slug}`,
     },
   };
 }
@@ -45,7 +49,7 @@ export default async function BlogArticlePage({
 
   if (!article) notFound();
 
-  const articleUrl = `https://www.careertalks.space/blog/${slug}`;
+  const articleUrl = `https://careertalks.space/blog/${slug}`;
 
   return (
     <>

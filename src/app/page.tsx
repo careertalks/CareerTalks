@@ -225,13 +225,14 @@ export default function Home() {
               "Is everything really free? What\u2019s the catch?",
               "How do I choose between 20 different career paths?",
             ].map((question) => (
-              <div
+              <Link
                 key={question}
-                className="bg-white border border-gray-100 rounded-xl px-5 py-4 flex items-center justify-between hover:border-indigo-200 transition-colors cursor-pointer"
+                href="/faq"
+                className="bg-white border border-gray-100 rounded-xl px-5 py-4 flex items-center justify-between hover:border-indigo-200 transition-colors"
               >
                 <span className="font-semibold text-gray-900 text-sm">{question}</span>
                 <span className="text-gray-400 text-lg">+</span>
-              </div>
+              </Link>
             ))}
           </div>
 

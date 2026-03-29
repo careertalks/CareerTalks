@@ -16,22 +16,17 @@ export function WebsiteJsonLd() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: "CareerTalks",
-    url: "https://www.careertalks.space",
+    url: "https://careertalks.space",
     description:
       "Comprehensive career guidance for 20+ industries. Interactive guides, skill roadmaps, and expert insights to help you find your path.",
     publisher: {
       "@type": "Organization",
       name: "CareerTalks",
-      url: "https://www.careertalks.space",
+      url: "https://careertalks.space",
       logo: {
         "@type": "ImageObject",
-        url: "https://www.careertalks.space/logo.png",
+        url: "https://careertalks.space/logo.png",
       },
-    },
-    potentialAction: {
-      "@type": "SearchAction",
-      target: "https://www.careertalks.space/search?q={search_term_string}",
-      "query-input": "required name=search_term_string",
     },
   };
 
@@ -66,15 +61,15 @@ export function ArticleJsonLd({
     author: {
       "@type": "Organization",
       name: "CareerTalks",
-      url: "https://www.careertalks.space",
+      url: "https://careertalks.space",
     },
     publisher: {
       "@type": "Organization",
       name: "CareerTalks",
-      url: "https://www.careertalks.space",
+      url: "https://careertalks.space",
       logo: {
         "@type": "ImageObject",
-        url: "https://www.careertalks.space/logo.png",
+        url: "https://careertalks.space/logo.png",
       },
     },
   };
@@ -103,7 +98,7 @@ export function BreadcrumbJsonLd({ items }: BreadcrumbJsonLdProps) {
       "@type": "ListItem",
       position: index + 1,
       name: item.name,
-      item: `https://www.careertalks.space${item.href}`,
+      item: `https://careertalks.space${item.href}`,
     })),
   };
 
@@ -117,6 +112,69 @@ interface FAQItem {
 
 interface FAQPageJsonLdProps {
   faqs: FAQItem[];
+}
+
+export function EducationalOrganizationJsonLd() {
+  const data = {
+    "@context": "https://schema.org",
+    "@type": "EducationalOrganization",
+    name: "CareerTalks",
+    url: "https://careertalks.space",
+    description:
+      "Free career guidance platform for students and young professionals. Explore 20 career paths with interactive tools, salary guides, and skill roadmaps.",
+    logo: {
+      "@type": "ImageObject",
+      url: "https://careertalks.space/logo.png",
+    },
+    areaServed: [
+      { "@type": "Country", name: "India" },
+      { "@type": "Country", name: "United States" },
+    ],
+    audience: {
+      "@type": "EducationalAudience",
+      educationalRole: "student",
+    },
+    sameAs: [],
+  };
+
+  return <JsonLdScript data={data} />;
+}
+
+export interface OccupationJsonLdProps {
+  name: string;
+  description: string;
+  salary: string;
+  growthRate: string;
+  skills: string[];
+}
+
+export function OccupationJsonLd({
+  name,
+  description,
+  salary,
+  growthRate,
+  skills,
+}: OccupationJsonLdProps) {
+  const data = {
+    "@context": "https://schema.org",
+    "@type": "Occupation",
+    name,
+    description,
+    occupationLocation: [
+      { "@type": "Country", name: "India" },
+      { "@type": "Country", name: "United States" },
+    ],
+    estimatedSalary: {
+      "@type": "MonetaryAmountDistribution",
+      name: "Average Annual Salary",
+      currency: "USD",
+      median: salary,
+    },
+    skills: skills.join(", "),
+    qualifications: `Growth rate: ${growthRate}`,
+  };
+
+  return <JsonLdScript data={data} />;
 }
 
 export function FAQPageJsonLd({ faqs }: FAQPageJsonLdProps) {

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import NewsletterCTA from "@/components/NewsletterCTA";
 import CrossPromoStrip from "@/components/CrossPromoStrip";
+import { FAQPageJsonLd } from "@/components/JsonLd";
 
 const faqs = [
   {
@@ -90,6 +91,8 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
 export default function FAQPage() {
   return (
     <>
+      <FAQPageJsonLd faqs={faqs} />
+
       {/* Hero */}
       <section className="relative overflow-hidden hero-dark noise-overlay">
         <div className="absolute inset-0 dot-pattern opacity-20" />

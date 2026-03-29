@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getAllCareerSlugs } from "@/lib/career-config";
-import { getAllArticleSlugs } from "@/lib/articles";
+import { getAllArticleSlugs, getArticlesByCategory } from "@/lib/articles";
+import type { CareerSlug } from "@/lib/career-config";
 
 const BASE_URL = "https://careertalks.space";
 
@@ -28,36 +29,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
-      url: `${BASE_URL}/assessment`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    {
-      url: `${BASE_URL}/day-in-life`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.7,
-    },
-    {
-      url: `${BASE_URL}/compatibility`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.7,
-    },
-    {
-      url: `${BASE_URL}/salary-calculator`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.7,
-    },
-    {
-      url: `${BASE_URL}/quiz`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.7,
-    },
-    {
       url: `${BASE_URL}/about`,
       lastModified: now,
       changeFrequency: "monthly",
@@ -69,7 +40,39 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.5,
     },
+    {
+      url: `${BASE_URL}/privacy`,
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    {
+      url: `${BASE_URL}/terms`,
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
   ];
+
+  // Interactive tool pages
+  const toolPages: MetadataRoute.Sitemap = [
+    "assessment",
+    "quiz",
+    "zodiac",
+    "roulette",
+    "skill-match",
+    "duels",
+    "career-navigator",
+    "career-explorer",
+    "day-in-life",
+    "compatibility",
+    "salary-calculator",
+  ].map((tool) => ({
+    url: `${BASE_URL}/${tool}`,
+    lastModified: now,
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
+  }));
 
   // Career hub pages (20 paths)
   const careerSlugs = getAllCareerSlugs();
@@ -80,16 +83,54 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.9,
   }));
 
-  // Individual career article pages (blog articles don't have individual routes)
+  // Build a date lookup for article pages
+  const articleDateMap = new Map<string, string>();
+  for (const careerSlug of careerSlugs) {
+    const articles = getArticlesByCategory(careerSlug as CareerSlug);
+    for (const article of articles) {
+      articleDateMap.set(`${careerSlug}/${article.slug}`, article.date);
+    }
+  }
+
+  // Individual career article pages
   const articleSlugs = getAllArticleSlugs();
   const articlePages: MetadataRoute.Sitemap = articleSlugs
     .filter(({ category }) => category !== "blog")
     .map(({ category, slug }) => ({
       url: `${BASE_URL}/careers/${category}/${slug}`,
-      lastModified: now,
+      lastModified: articleDateMap.get(`${category}/${slug}`) || now,
       changeFrequency: "monthly" as const,
       priority: 0.7,
     }));
 
-  return [...staticPages, ...careerPages, ...articlePages];
+  // Blog article pages
+  const blogArticles = getArticlesByCategory("blog");
+  const blogPages: MetadataRoute.Sitemap = blogArticles.map((article) => ({
+    url: `${BASE_URL}/blog/${article.slug}`,
+    lastModified: article.date,
+    changeFrequency: "monthly" as const,
+    priority: 0.6,
+  }));
+
+  // Career comparison pages (20 choose 2 = 190 pages)
+  const comparePages: MetadataRoute.Sitemap = [];
+  for (let i = 0; i < careerSlugs.length; i++) {
+    for (let j = i + 1; j < careerSlugs.length; j++) {
+      comparePages.push({
+        url: `${BASE_URL}/compare/${careerSlugs[i]}-vs-${careerSlugs[j]}`,
+        lastModified: now,
+        changeFrequency: "monthly" as const,
+        priority: 0.5,
+      });
+    }
+  }
+
+  return [
+    ...staticPages,
+    ...toolPages,
+    ...careerPages,
+    ...articlePages,
+    ...blogPages,
+    ...comparePages,
+  ];
 }

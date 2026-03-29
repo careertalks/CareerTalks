@@ -4,9 +4,10 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FloatingPromoBar from "@/components/FloatingPromoBar";
-import { WebsiteJsonLd } from "@/components/JsonLd";
+import { WebsiteJsonLd, EducationalOrganizationJsonLd } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://careertalks.space"),
   title: {
     default: "CareerTalks | Shape Your Tomorrow, Today",
     template: "%s | CareerTalks",
@@ -17,7 +18,7 @@ export const metadata: Metadata = {
     "career guidance",
     "career paths",
     "career advice for students",
-    "job market 2025",
+    "job market 2026",
     "future careers",
     "career planning",
     "career exploration",
@@ -31,11 +32,20 @@ export const metadata: Metadata = {
     title: "CareerTalks | Shape Your Tomorrow, Today",
     description:
       "Free career guidance for students and young professionals. Explore 20 career paths with real industry insights.",
+    images: [
+      {
+        url: "https://careertalks.space/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "CareerTalks — Shape Your Tomorrow, Today",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "CareerTalks",
     description: "Free career guidance for students and young professionals.",
+    images: ["https://careertalks.space/opengraph-image"],
   },
   alternates: {
     canonical: "https://careertalks.space",
@@ -69,6 +79,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen flex flex-col bg-white">
         <WebsiteJsonLd />
+        <EducationalOrganizationJsonLd />
         <Navbar />
         <main className="flex-1">{children}</main>
         <Footer />
