@@ -48,6 +48,14 @@ export interface JobFetchResult {
   sources: string[];
   fetchedAt: string;
   careerSlug: CareerSlug;
+  // Temporary debug field — remove after verifying Adzuna
+  _debug?: {
+    adzunaRaw: number;
+    adzunaSample: string[];
+    adzunaAfterSeniority: number;
+    adzunaAfterRelevance: number;
+    hasAdzunaKeys: boolean;
+  };
 }
 
 // ─── Seniority Filter (audience: 17–24 yr olds) ─────────────────────
@@ -777,6 +785,10 @@ export async function fetchJobsForCareer(
     }
   }
 
+  // ─── DEBUG: Track Adzuna through pipeline ────────────────────
+  const adzunaRawJobs = adzunaJobs.status === "fulfilled" ? adzunaJobs.value : [];
+  const hasAdzunaKeys = !!(process.env.ADZUNA_APP_ID && process.env.ADZUNA_APP_KEY);
+
   // ─── FILTER PIPELINE ──────────────────────────────────────────
 
   // Step 1: Remove jobs without valid URLs
@@ -787,6 +799,9 @@ export async function fetchJobsForCareer(
   // Step 2: Remove senior/leadership roles (title-based, for non-Himalayas)
   // Note: Himalayas jobs already filtered by seniority field in fetchHimalayas()
   filtered = filtered.filter((j) => !isSeniorRole(j.title, slug));
+
+  // DEBUG: count adzuna after seniority
+  const adzunaAfterSeniority = filtered.filter((j) => j.source === "adzuna").length;
 
   // Step 3: Score relevance and remove irrelevant jobs
   const scored = filtered.map((job) => ({
@@ -799,6 +814,9 @@ export async function fetchJobsForCareer(
   // Keep only jobs with actual relevance to the career track
   // ALL jobs must pass relevance scoring — no free passes
   const relevant = scored.filter((s) => s.relevance > 0);
+
+  // DEBUG: count adzuna after relevance
+  const adzunaAfterRelevance = relevant.filter((s) => s.job.source === "adzuna").length;
 
   // Step 4: Sort — entry-level/intern first, then by relevance + type priority
   relevant.sort((a, b) => {
@@ -820,15 +838,18 @@ export async function fetchJobsForCareer(
   const deduped = deduplicateJobs(relevant.map((s) => s.job));
   const final = deduped.slice(0, limit);
 
-  // If we got too few results, we do NOT add random entry-level jobs.
-  // It's better to show 0-2 accurate results than 10 irrelevant ones.
-  // The UI already handles empty states gracefully.
-
   return {
     jobs: final,
     totalFound: deduped.length,
     sources: activeSources,
     fetchedAt: new Date().toISOString(),
     careerSlug: slug,
+    _debug: {
+      adzunaRaw: adzunaRawJobs.length,
+      adzunaSample: adzunaRawJobs.slice(0, 5).map((j) => j.title),
+      adzunaAfterSeniority,
+      adzunaAfterRelevance,
+      hasAdzunaKeys,
+    },
   };
 }
