@@ -49,13 +49,8 @@ export interface JobFetchResult {
   fetchedAt: string;
   careerSlug: CareerSlug;
   // Temporary debug field — remove after verifying Adzuna
-  _debug?: {
-    adzunaRaw: number;
-    adzunaSample: string[];
-    adzunaAfterSeniority: number;
-    adzunaAfterRelevance: number;
-    hasAdzunaKeys: boolean;
-  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  _debug?: Record<string, any>;
 }
 
 // ─── Seniority Filter (audience: 17–24 yr olds) ─────────────────────
