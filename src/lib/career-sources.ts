@@ -343,8 +343,8 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       { url: "https://www.livemint.com/rss/companies", name: "LiveMint", type: "news", frequency: "daily", region: "india" },
     ],
     jobKeywords: {
-      primary: ["real estate", "property", "proptech", "leasing", "real estate analyst"],
-      india: ["real estate", "property coordinator", "leasing"],
+      primary: ["real estate", "property", "proptech", "leasing", "real estate analyst", "mortgage", "realtor", "housing", "property management"],
+      india: ["real estate", "property coordinator", "leasing", "housing"],
       exclude: ["director", "VP"],
       adzunaCategory: "property-jobs",
       adzunaCountries: ["us", "in", "gb"],
@@ -403,8 +403,8 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       { url: "https://www.livemint.com/rss/companies", name: "LiveMint", type: "news", frequency: "daily", region: "india" },
     ],
     jobKeywords: {
-      primary: ["renewable energy", "sustainability", "environmental", "solar", "clean energy", "green"],
-      india: ["sustainability", "solar", "environmental"],
+      primary: ["renewable energy", "sustainability", "environmental", "solar", "clean energy", "green", "energy", "climate", "wind", "ESG", "carbon"],
+      india: ["sustainability", "solar", "environmental", "energy"],
       exclude: ["director", "VP"],
       remotiveCategory: "all-others",
       adzunaCategory: "energy-oil-gas-jobs",
