@@ -198,7 +198,7 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       { url: "https://yourstory.com/feed", name: "YourStory", type: "news", frequency: "daily", region: "india" },
     ],
     jobKeywords: {
-      primary: ["product manager", "product analyst", "product", "APM", "product coordinator"],
+      primary: ["product manager", "product management", "product analyst", "product owner", "APM", "product coordinator"],
       india: ["product analyst", "APM", "product coordinator"],
       exclude: ["director", "VP"],
       remotiveCategory: "project-management",
@@ -464,7 +464,7 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       { url: "https://www.expresshealthcare.in/feed/", name: "Express Healthcare", type: "news", frequency: "daily", region: "india" },
     ],
     jobKeywords: {
-      primary: ["healthcare", "hospital", "health", "clinical", "medical", "nursing", "public health"],
+      primary: ["healthcare", "hospital", "health", "clinical", "medical", "nursing", "public health", "health informatics", "medical billing"],
       india: ["healthcare", "hospital", "clinical"],
       exclude: ["director", "VP"],
       remotiveCategory: "all-others",
@@ -524,7 +524,7 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       { url: "https://yourstory.com/feed", name: "YourStory (D2C Fashion)", type: "news", frequency: "daily", region: "india" },
     ],
     jobKeywords: {
-      primary: ["fashion", "textile", "apparel", "design", "stylist", "fashion designer"],
+      primary: ["fashion", "textile", "apparel", "fashion design", "stylist", "fashion designer", "designer"],
       india: ["fashion", "textile", "apparel"],
       exclude: ["director", "VP"],
       remotiveCategory: "all-others",
@@ -636,7 +636,7 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       { url: "https://yourstory.com/feed", name: "YourStory (Design)", type: "news", frequency: "daily", region: "india" },
     ],
     jobKeywords: {
-      primary: ["UX designer", "UI designer", "graphic designer", "design", "creative", "visual designer", "illustrator"],
+      primary: ["UX designer", "UI designer", "graphic designer", "graphic design", "creative design", "visual designer", "illustrator", "designer"],
       india: ["UX designer", "graphic designer", "design"],
       exclude: ["director", "VP"],
       remotiveCategory: "software-dev",

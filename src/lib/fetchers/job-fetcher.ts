@@ -153,8 +153,22 @@ function isEntryLevel(title: string): boolean {
 // ─── Relevance Scoring ──────────────────────────────────────────────
 
 /**
+ * Creates a word-boundary regex for a keyword.
+ * Uses \b for normal words; for hyphenated compound words in tags
+ * (e.g., "AI-Training"), also checks with hyphens replaced by spaces.
+ */
+function keywordRegex(keyword: string): RegExp {
+  // Escape regex special chars except hyphens (we handle those)
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  // Allow hyphens/spaces to match interchangeably (for "data-science" vs "data science")
+  const pattern = escaped.replace(/[\s-]+/g, "[\\s\\-]+");
+  return new RegExp(`\\b${pattern}\\b`, "i");
+}
+
+/**
  * Scores a job's relevance to a career track (0.0 to 1.0).
- * Uses title + tags matching against career keywords.
+ * Uses WORD-BOUNDARY matching (not substring) to avoid false positives
+ * like "AI" matching "training" or "design" matching "Instructional-Design".
  * Returns 0 if the job has zero relevance (should be filtered out).
  */
 function scoreRelevance(
@@ -163,11 +177,19 @@ function scoreRelevance(
   exclude?: string[]
 ): number {
   const titleLower = job.title.toLowerCase();
-  const tagsLower = (job.tags || []).map((t) => t.toLowerCase()).join(" ");
-  const combined = `${titleLower} ${tagsLower}`;
+  // Normalize tag separators: replace hyphens with spaces for matching
+  const tagsNormalized = (job.tags || [])
+    .map((t) => t.toLowerCase().replace(/-/g, " "))
+    .join(" | ");
+  const combined = `${titleLower} ${tagsNormalized}`;
 
-  // Check exclude keywords first
-  if (exclude?.some((kw) => combined.includes(kw.toLowerCase()))) {
+  // Check exclude keywords with word boundaries
+  if (
+    exclude?.some((kw) => {
+      const re = keywordRegex(kw);
+      return re.test(combined);
+    })
+  ) {
     return 0;
   }
 
@@ -175,32 +197,33 @@ function scoreRelevance(
   let matchCount = 0;
 
   for (const keyword of primaryKeywords) {
-    const kwLower = keyword.toLowerCase();
-    // Split multi-word keywords into individual terms too
-    const terms = kwLower.split(/\s+/);
+    const re = keywordRegex(keyword);
 
-    // Full phrase match in title = highest value
-    if (titleLower.includes(kwLower)) {
+    // Full keyword match in title = highest value
+    if (re.test(titleLower)) {
       score += 1.0;
       matchCount++;
       continue;
     }
 
-    // Full phrase match in tags
-    if (tagsLower.includes(kwLower)) {
-      score += 0.7;
+    // Full keyword match in tags (normalized)
+    if (re.test(tagsNormalized)) {
+      score += 0.6;
       matchCount++;
       continue;
     }
 
-    // Individual term matches — only count if the term is specific enough
-    // (4+ chars to avoid matching "AI" or "HR" in random words)
-    const termMatches = terms.filter(
-      (t) => t.length > 3 && combined.includes(t)
-    );
-    if (termMatches.length > 0 && termMatches.length >= terms.length * 0.5) {
-      score += 0.3 * (termMatches.length / terms.length);
-      matchCount++;
+    // For multi-word keywords, check if individual LONG terms match in title
+    // (must be 5+ chars to be meaningful — avoids "data" matching everywhere)
+    const terms = keyword.toLowerCase().split(/\s+/);
+    if (terms.length > 1) {
+      const titleTermMatches = terms.filter(
+        (t) => t.length >= 5 && new RegExp(`\\b${t}\\b`, "i").test(titleLower)
+      );
+      if (titleTermMatches.length > 0) {
+        score += 0.3 * (titleTermMatches.length / terms.length);
+        matchCount++;
+      }
     }
   }
 
@@ -430,11 +453,8 @@ async function fetchHimalayas(
     const data = await res.json();
     const jobs: HimalayasJob[] = data.jobs || [];
 
-    // Build keyword matchers (lowercase, hyphenated for Himalayas categories)
-    const kwLower = keywords.map((k) => k.toLowerCase());
-    const kwHyphenated = keywords.map((k) =>
-      k.toLowerCase().replace(/\s+/g, "-")
-    );
+    // Build word-boundary regex matchers for each keyword
+    const kwRegexes = keywords.map((k) => keywordRegex(k));
 
     const matched: JobListing[] = [];
 
@@ -446,34 +466,18 @@ async function fetchHimalayas(
         seniority.some((s) => HIMALAYAS_OK_SENIORITY.has(s));
       if (!seniorityOk) continue;
 
-      // Step 2: Check category relevance
-      const cats = (j.categories || []).map((c) => c.toLowerCase());
-      const catsJoined = cats.join(" ");
+      // Step 2: Check category relevance (using word-boundary matching)
+      // Normalize categories: "Product-Management" → "product management"
+      const catsNormalized = (j.categories || [])
+        .map((c) => c.toLowerCase().replace(/-/g, " "))
+        .join(" | ");
+      const titleLower = j.title.toLowerCase();
 
       let relevant = false;
-      for (const kw of kwLower) {
-        if (catsJoined.includes(kw)) {
+      for (const re of kwRegexes) {
+        if (re.test(catsNormalized) || re.test(titleLower)) {
           relevant = true;
           break;
-        }
-      }
-      if (!relevant) {
-        // Also try hyphenated form (Himalayas uses "Product-Management" style)
-        for (const kw of kwHyphenated) {
-          if (cats.some((c) => c.includes(kw))) {
-            relevant = true;
-            break;
-          }
-        }
-      }
-      if (!relevant) {
-        // Last check: title contains any keyword
-        const titleLower = j.title.toLowerCase();
-        for (const kw of kwLower) {
-          if (titleLower.includes(kw)) {
-            relevant = true;
-            break;
-          }
         }
       }
 
@@ -752,16 +756,8 @@ export async function fetchJobsForCareer(
   }));
 
   // Keep only jobs with actual relevance to the career track
-  // Himalayas jobs that passed category filtering get a baseline relevance
-  const relevant = scored.filter((s) => {
-    if (s.relevance > 0) return true;
-    // Himalayas jobs already passed category match — give them a pass
-    // if they have decent tags
-    if (s.job.source === "himalayas" && (s.job.tags?.length || 0) > 0) {
-      return true;
-    }
-    return false;
-  });
+  // ALL jobs must pass relevance scoring — no free passes
+  const relevant = scored.filter((s) => s.relevance > 0);
 
   // Step 4: Sort — entry-level/intern first, then by relevance + type priority
   relevant.sort((a, b) => {
@@ -783,20 +779,9 @@ export async function fetchJobsForCareer(
   const deduped = deduplicateJobs(relevant.map((s) => s.job));
   const final = deduped.slice(0, limit);
 
-  // If we got too few results, accept marginally relevant entry-level jobs
-  if (final.length < 5) {
-    const lenient = scored
-      .filter((s) => !isSeniorRole(s.job.title, slug) && s.entryLevel)
-      .sort((a, b) => b.typePriority - a.typePriority);
-
-    const existingIds = new Set(final.map((j) => j.id));
-    for (const s of lenient) {
-      if (!existingIds.has(s.job.id) && final.length < limit) {
-        final.push(s.job);
-        existingIds.add(s.job.id);
-      }
-    }
-  }
+  // If we got too few results, we do NOT add random entry-level jobs.
+  // It's better to show 0-2 accurate results than 10 irrelevant ones.
+  // The UI already handles empty states gracefully.
 
   return {
     jobs: final,
