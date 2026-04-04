@@ -172,11 +172,11 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       { url: "https://economictimes.indiatimes.com/tech/rssfeeds/13357270.cms", name: "ET Tech", type: "news", frequency: "daily", region: "india" },
     ],
     jobKeywords: {
-      primary: ["network engineer", "telecom", "telecommunications", "5G", "RF engineer", "network"],
+      primary: ["network engineer", "telecom", "telecommunications", "5G", "RF engineer", "network", "NOC"],
       india: ["network engineer", "telecom", "5G technician"],
       exclude: ["director", "VP"],
       remotiveCategory: "software-development",
-      adzunaCategory: "it-jobs",
+      adzunaCategory: "engineering-jobs",
       adzunaCountries: ["us", "in", "gb"],
     },
     contentTags: {

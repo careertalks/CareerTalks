@@ -638,6 +638,16 @@ function mapAdzunaJobs(
         salaryRange = `${currencySymbol}${formatSalary(j.salary_min)} – ${currencySymbol}${formatSalary(j.salary_max)}`;
       }
 
+      // Extract meaningful keywords from the Adzuna description snippet
+      // to help relevance scoring (Adzuna jobs lack rich tags)
+      const descSnippet = (j.description || "").toLowerCase().slice(0, 500);
+      const tags: string[] = [j.category?.label, country.toUpperCase()].filter(Boolean);
+
+      // Add description-derived context tags for relevance scoring
+      if (descSnippet) {
+        tags.push(`desc:${descSnippet}`);
+      }
+
       return {
         id: `adzuna-${country}-${j.id}`,
         title: j.title,
@@ -648,7 +658,7 @@ function mapAdzunaJobs(
         url: j.redirect_url,
         postedAt: j.created,
         source: "adzuna",
-        tags: [j.category?.label, country.toUpperCase()].filter(Boolean),
+        tags,
         remote:
           j.title.toLowerCase().includes("remote") ||
           j.location?.display_name?.toLowerCase().includes("remote"),
