@@ -582,17 +582,21 @@ async function fetchAdzunaForCountry(
       app_key: appKey,
       results_per_page: String(limit),
       what: query,
-      content_type: "application/json",
     });
     if (adzunaCategory) params.set("category", adzunaCategory);
 
-    const res = await fetch(
-      `https://api.adzuna.com/v1/api/jobs/${country}/search/1?${params}`,
-      { next: { revalidate: 3600 } }
-    );
+    const url = `https://api.adzuna.com/v1/api/jobs/${country}/search/1?${params}`;
+    console.log(`[JobFetcher] Adzuna (${country}) URL: ${url.replace(appKey, "***")}`);
 
-    if (!res.ok) return [];
+    const res = await fetch(url, { next: { revalidate: 3600 } });
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error(`[JobFetcher] Adzuna (${country}) HTTP ${res.status}: ${body.slice(0, 200)}`);
+      return [];
+    }
     const data = await res.json();
+    console.log(`[JobFetcher] Adzuna (${country}) returned ${data.results?.length ?? 0} results`);
     return mapAdzunaJobs(data.results || [], country, limit);
   } catch (e) {
     console.error(`[JobFetcher] Adzuna (${country}) error:`, e);
