@@ -50,9 +50,6 @@ export interface JobFetchResult {
   sources: string[];
   fetchedAt: string;
   careerSlug: CareerSlug;
-  // Temporary debug field — remove after verifying Adzuna
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  _debug?: Record<string, any>;
 }
 
 // ─── Seniority Filter (audience: 17–24 yr olds) ─────────────────────
@@ -602,16 +599,9 @@ async function fetchAdzunaForCountry(
       if (cat) params.set("category", cat);
 
       const url = `https://api.adzuna.com/v1/api/jobs/${country}/search/1?${params}`;
-      console.log(`[JobFetcher] Adzuna (${country}) URL: ${url.replace(appKey!, "***")}`);
-
       const res = await fetch(url, { next: { revalidate: 3600 } });
-      if (!res.ok) {
-        const body = await res.text().catch(() => "");
-        console.error(`[JobFetcher] Adzuna (${country}) HTTP ${res.status}: ${body.slice(0, 200)}`);
-        return [];
-      }
+      if (!res.ok) return [];
       const data = await res.json();
-      console.log(`[JobFetcher] Adzuna (${country}${cat ? `, cat=${cat}` : ""}) returned ${data.results?.length ?? 0} results`);
       return mapAdzunaJobs(data.results || [], country, limit);
     };
 
@@ -620,7 +610,6 @@ async function fetchAdzunaForCountry(
       const withCat = await doSearch(adzunaCategory);
       if (withCat.length > 0) return withCat;
       // Fallback: keyword-only search (broader, rely on relevance scoring)
-      console.log(`[JobFetcher] Adzuna (${country}) category "${adzunaCategory}" empty, retrying keyword-only`);
       return doSearch();
     }
     return doSearch();
@@ -926,7 +915,7 @@ function deduplicateJobs(jobs: JobListing[]): JobListing[] {
  * Fetches jobs from all available APIs for a given career slug.
  *
  * Pipeline:
- *   1. Fetch from Remotive + Jobicy + Himalayas + Adzuna in parallel
+ *   1. Fetch from Remotive + Jobicy + Himalayas + Adzuna + TheMuse + RemoteOK in parallel
  *   2. Remove senior/leadership titles (audience = 17–24 yr olds)
  *   3. Score relevance against career keywords (drop irrelevant ones)
  *   4. Sort by: type priority (intern > part-time > freelance > contract > full-time)
@@ -1019,21 +1008,6 @@ export async function fetchJobsForCareer(
     }
   }
 
-  // ─── DEBUG: Track Adzuna through pipeline ────────────────────
-  const adzunaRawJobs = adzunaJobs.status === "fulfilled" ? adzunaJobs.value : [];
-  const hasAdzunaKeys = !!(process.env.ADZUNA_APP_ID && process.env.ADZUNA_APP_KEY);
-
-  // Debug: trace scoring for first 3 Adzuna jobs that pass seniority
-  const adzunaScoreTrace = adzunaRawJobs
-    .filter((j) => !isSeniorRole(j.title, slug))
-    .slice(0, 3)
-    .map((j) => {
-      const rel = scoreRelevance(j, primary, exclude);
-      const hasDesc = j.tags?.some((t) => t.startsWith("desc:"));
-      const descLen = j.tags?.find((t) => t.startsWith("desc:"))?.length || 0;
-      return { title: j.title, relevance: rel, hasDesc, descLen };
-    });
-
   // ─── FILTER PIPELINE ──────────────────────────────────────────
 
   // Step 1: Remove jobs without valid URLs
@@ -1044,9 +1018,6 @@ export async function fetchJobsForCareer(
   // Step 2: Remove senior/leadership roles (title-based, for non-Himalayas)
   // Note: Himalayas jobs already filtered by seniority field in fetchHimalayas()
   filtered = filtered.filter((j) => !isSeniorRole(j.title, slug));
-
-  // DEBUG: count adzuna after seniority
-  const adzunaAfterSeniority = filtered.filter((j) => j.source === "adzuna").length;
 
   // Step 3: Score relevance and remove irrelevant jobs
   const scored = filtered.map((job) => ({
@@ -1059,9 +1030,6 @@ export async function fetchJobsForCareer(
   // Keep only jobs with actual relevance to the career track
   // ALL jobs must pass relevance scoring — no free passes
   const relevant = scored.filter((s) => s.relevance > 0);
-
-  // DEBUG: count adzuna after relevance
-  const adzunaAfterRelevance = relevant.filter((s) => s.job.source === "adzuna").length;
 
   // Step 4: Sort — entry-level/intern first, then by relevance + type priority
   relevant.sort((a, b) => {
@@ -1089,13 +1057,5 @@ export async function fetchJobsForCareer(
     sources: activeSources,
     fetchedAt: new Date().toISOString(),
     careerSlug: slug,
-    _debug: {
-      adzunaRaw: adzunaRawJobs.length,
-      adzunaSample: adzunaRawJobs.slice(0, 5).map((j) => j.title),
-      adzunaAfterSeniority,
-      adzunaAfterRelevance,
-      hasAdzunaKeys,
-      adzunaScoreTrace,
-    },
   };
 }
