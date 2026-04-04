@@ -42,32 +42,27 @@ const TAB_ACTIVE_CLASSES: Record<TabId, string> = {
   earn: "bg-amber-500/20 text-amber-400",
 };
 
+// ─── Default progress (used for SSR and initial client render) ───
+const DEFAULT_PROGRESS: ProgressData = {
+  knowledge: { done: 0, total: 10 },
+  skills: { done: 0, total: 6 },
+  experience: { done: 0, total: 0 },
+};
+
 // ─── localStorage helpers ───
 function getProgressKey(slug: CareerSlug) {
   return `ct-progress-${slug}`;
 }
 
 function loadProgress(slug: CareerSlug): ProgressData {
-  if (typeof window === "undefined") {
-    return {
-      knowledge: { done: 0, total: 10 },
-      skills: { done: 0, total: 6 },
-      experience: { done: 0, total: 0 },
-    };
-  }
   try {
     const stored = localStorage.getItem(getProgressKey(slug));
     if (stored) return JSON.parse(stored);
   } catch {}
-  return {
-    knowledge: { done: 0, total: 10 },
-    skills: { done: 0, total: 6 },
-    experience: { done: 0, total: 0 },
-  };
+  return DEFAULT_PROGRESS;
 }
 
 function saveProgress(slug: CareerSlug, data: ProgressData) {
-  if (typeof window === "undefined") return;
   try {
     localStorage.setItem(getProgressKey(slug), JSON.stringify(data));
   } catch {}
@@ -108,16 +103,23 @@ export default function CareerHubPage({
   // Tab state
   const [activeTab, setActiveTab] = useState<TabId>("latest");
 
-  // Progress state
-  const [progress, setProgress] = useState<ProgressData>(() =>
-    loadProgress(careerSlug)
-  );
+  // Progress state — use static default for SSR, hydrate from localStorage after mount
+  const [progress, setProgress] = useState<ProgressData>(DEFAULT_PROGRESS);
 
   // Notification dots (new content since last visit)
   const [notifCounts, setNotifCounts] = useState({ latest: 0, earn: 0 });
 
-  // Cycle dates
-  const cycle = getCurrentCycleDates();
+  // Cycle dates — defer to useEffect to avoid server/client mismatch
+  const [cycle, setCycle] = useState<{ start: string; end: string }>({
+    start: "",
+    end: "",
+  });
+
+  // Hydrate client-only state after mount
+  useEffect(() => {
+    setProgress(loadProgress(careerSlug));
+    setCycle(getCurrentCycleDates());
+  }, [careerSlug]);
 
   // Related careers
   const relatedCareers = getCareersByCluster(career.cluster)

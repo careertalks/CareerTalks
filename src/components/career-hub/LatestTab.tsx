@@ -9,11 +9,11 @@ interface ContentItem {
   url: string;
   source: string;
   sourceType: "rss" | "devto" | "reddit";
-  publishedAt: string | null;
+  publishedAt: string;
   excerpt: string;
-  imageUrl: string | null;
-  readTime: number | null;
-  tags: string[];
+  imageUrl?: string | null;
+  readTime?: string;
+  tags?: string[];
 }
 
 interface LatestTabProps {
@@ -218,10 +218,10 @@ export default function LatestTab({
                   <div className="flex items-center gap-2.5 mt-1.5 flex-wrap">
                     {item.readTime && (
                       <span className="text-[11px] text-gray-400">
-                        📖 {item.readTime} min
+                        📖 {item.readTime}
                       </span>
                     )}
-                    {item.tags.slice(0, 3).map((tag) => (
+                    {(item.tags || []).slice(0, 3).map((tag) => (
                       <span
                         key={tag}
                         className="text-[10px] text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded"
