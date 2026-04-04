@@ -820,6 +820,17 @@ export async function fetchJobsForCareer(
   const adzunaRawJobs = adzunaJobs.status === "fulfilled" ? adzunaJobs.value : [];
   const hasAdzunaKeys = !!(process.env.ADZUNA_APP_ID && process.env.ADZUNA_APP_KEY);
 
+  // Debug: trace scoring for first 3 Adzuna jobs that pass seniority
+  const adzunaScoreTrace = adzunaRawJobs
+    .filter((j) => !isSeniorRole(j.title, slug))
+    .slice(0, 3)
+    .map((j) => {
+      const rel = scoreRelevance(j, primary, exclude);
+      const hasDesc = j.tags?.some((t) => t.startsWith("desc:"));
+      const descLen = j.tags?.find((t) => t.startsWith("desc:"))?.length || 0;
+      return { title: j.title, relevance: rel, hasDesc, descLen };
+    });
+
   // ─── FILTER PIPELINE ──────────────────────────────────────────
 
   // Step 1: Remove jobs without valid URLs
@@ -881,6 +892,7 @@ export async function fetchJobsForCareer(
       adzunaAfterSeniority,
       adzunaAfterRelevance,
       hasAdzunaKeys,
+      adzunaScoreTrace,
     },
   };
 }
