@@ -156,6 +156,16 @@ export default function CareerHubPage({
     []
   );
 
+  // Stable callback refs for tab components (prevents infinite useEffect loops)
+  const onNewContentCount = useCallback(
+    (count: number) => setNotifCounts((prev) => ({ ...prev, latest: count })),
+    []
+  );
+  const onNewJobCount = useCallback(
+    (count: number) => setNotifCounts((prev) => ({ ...prev, earn: count })),
+    []
+  );
+
   return (
     <>
       {/* ═══════ HERO — light, soft ═══════ */}
@@ -284,9 +294,7 @@ export default function CareerHubPage({
               careerSlug={careerSlug}
               clusterColor={clusterColor}
               onArticleRead={() => updateProgress("knowledge")}
-              onNewContentCount={(count) =>
-                setNotifCounts((prev) => ({ ...prev, latest: count }))
-              }
+              onNewContentCount={onNewContentCount}
             />
           )}
           {activeTab === "practice" && (
@@ -302,9 +310,7 @@ export default function CareerHubPage({
               careerSlug={careerSlug}
               clusterColor={clusterColor}
               onJobView={() => updateProgress("experience")}
-              onNewJobCount={(count) =>
-                setNotifCounts((prev) => ({ ...prev, earn: count }))
-              }
+              onNewJobCount={onNewJobCount}
             />
           )}
         </div>
