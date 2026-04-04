@@ -585,27 +585,40 @@ async function fetchAdzunaForCountry(
   try {
     // Simple keyword search — seniority filtering happens in the pipeline
     const query = keywords.slice(0, 3).join(" OR ");
-    const params = new URLSearchParams({
-      app_id: appId,
-      app_key: appKey,
-      results_per_page: String(limit),
-      what: query,
-    });
-    if (adzunaCategory) params.set("category", adzunaCategory);
 
-    const url = `https://api.adzuna.com/v1/api/jobs/${country}/search/1?${params}`;
-    console.log(`[JobFetcher] Adzuna (${country}) URL: ${url.replace(appKey, "***")}`);
+    // Helper to do a single Adzuna search
+    const doSearch = async (cat?: string): Promise<JobListing[]> => {
+      const params = new URLSearchParams({
+        app_id: appId!,
+        app_key: appKey!,
+        results_per_page: String(limit),
+        what: query,
+      });
+      if (cat) params.set("category", cat);
 
-    const res = await fetch(url, { next: { revalidate: 3600 } });
+      const url = `https://api.adzuna.com/v1/api/jobs/${country}/search/1?${params}`;
+      console.log(`[JobFetcher] Adzuna (${country}) URL: ${url.replace(appKey!, "***")}`);
 
-    if (!res.ok) {
-      const body = await res.text().catch(() => "");
-      console.error(`[JobFetcher] Adzuna (${country}) HTTP ${res.status}: ${body.slice(0, 200)}`);
-      return [];
+      const res = await fetch(url, { next: { revalidate: 3600 } });
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        console.error(`[JobFetcher] Adzuna (${country}) HTTP ${res.status}: ${body.slice(0, 200)}`);
+        return [];
+      }
+      const data = await res.json();
+      console.log(`[JobFetcher] Adzuna (${country}${cat ? `, cat=${cat}` : ""}) returned ${data.results?.length ?? 0} results`);
+      return mapAdzunaJobs(data.results || [], country, limit);
+    };
+
+    // Try with category first (more targeted), fallback to keyword-only if empty
+    if (adzunaCategory) {
+      const withCat = await doSearch(adzunaCategory);
+      if (withCat.length > 0) return withCat;
+      // Fallback: keyword-only search (broader, rely on relevance scoring)
+      console.log(`[JobFetcher] Adzuna (${country}) category "${adzunaCategory}" empty, retrying keyword-only`);
+      return doSearch();
     }
-    const data = await res.json();
-    console.log(`[JobFetcher] Adzuna (${country}) returned ${data.results?.length ?? 0} results`);
-    return mapAdzunaJobs(data.results || [], country, limit);
+    return doSearch();
   } catch (e) {
     console.error(`[JobFetcher] Adzuna (${country}) error:`, e);
     return [];
