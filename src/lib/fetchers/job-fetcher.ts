@@ -166,15 +166,16 @@ async function fetchJobicy(
 // ─── Himalayas (No Auth, 20 max per request) ────────────────────────
 
 interface HimalayasJob {
-  id: string;
+  guid: string;
   title: string;
   companyName: string;
+  companySlug?: string;
   companyLogo?: string;
   locationRestrictions?: string[];
-  seniority?: string;
+  seniority?: string[];
   employmentType?: string;
-  applicationUrl: string;
-  publishedDate: string;
+  applicationLink: string;
+  pubDate: number; // Unix timestamp
   minSalary?: number;
   maxSalary?: number;
   categories?: string[];
@@ -204,16 +205,21 @@ async function fetchHimalayas(
         salaryRange = `$${formatSalary(j.minSalary)} – $${formatSalary(j.maxSalary)}`;
       }
 
+      // pubDate is a Unix timestamp (seconds) — convert to ISO string
+      const postedAt = j.pubDate
+        ? new Date(j.pubDate * 1000).toISOString()
+        : new Date().toISOString();
+
       return {
-        id: `himalayas-${j.id}`,
+        id: `himalayas-${j.guid || j.companySlug || j.title}`,
         title: j.title,
         company: j.companyName,
         companyLogo: j.companyLogo || undefined,
         location: j.locationRestrictions?.join(", ") || "Remote",
         type: mapJobType(j.employmentType || "full_time"),
         salaryRange,
-        url: j.applicationUrl,
-        postedAt: j.publishedDate,
+        url: j.applicationLink || j.guid || "",
+        postedAt,
         source: "himalayas",
         tags: j.categories || [],
         remote: true,

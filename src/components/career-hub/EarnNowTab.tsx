@@ -8,12 +8,14 @@ interface JobListing {
   title: string;
   company: string;
   location: string;
-  url: string;
-  salary: string | null;
+  url?: string;
+  salaryRange?: string;
   tags: string[];
   source: string;
-  postedAt: string | null;
-  type: string | null;
+  postedAt?: string;
+  type?: string;
+  remote?: boolean;
+  companyLogo?: string;
 }
 
 interface EarnNowTabProps {
@@ -195,9 +197,9 @@ export default function EarnNowTab({
                   {job.company}
                 </div>
               </div>
-              {job.salary && (
+              {job.salaryRange && (
                 <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full whitespace-nowrap">
-                  {job.salary}
+                  {job.salaryRange}
                 </span>
               )}
             </div>
@@ -238,15 +240,21 @@ export default function EarnNowTab({
               <span className="text-[11px] text-gray-400">
                 via {job.source}
               </span>
-              <a
-                href={job.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={onJobView}
-                className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg hover:bg-emerald-100 transition-colors no-underline"
-              >
-                Apply ↗
-              </a>
+              {job.url ? (
+                <a
+                  href={job.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={onJobView}
+                  className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg hover:bg-emerald-100 transition-colors no-underline"
+                >
+                  Apply ↗
+                </a>
+              ) : (
+                <span className="text-xs text-gray-400 italic">
+                  Link unavailable
+                </span>
+              )}
             </div>
           </div>
         ))}
