@@ -1,198 +1,338 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import type { CareerSlug } from "@/lib/career-config";
-import { careerConfigs, clusterConfigs, getClusterForCareer, getCareersByCluster } from "@/lib/career-config";
+import {
+  careerConfigs,
+  clusterConfigs,
+  getClusterForCareer,
+  getCareersByCluster,
+} from "@/lib/career-config";
 import { getArticlesByCategory } from "@/lib/articles";
-import ArticleCard from "./ArticleCard";
-import NewsletterCTA from "./NewsletterCTA";
+import LatestTab from "./career-hub/LatestTab";
+import PracticeTab from "./career-hub/PracticeTab";
+import EarnNowTab from "./career-hub/EarnNowTab";
+import ProgressRings from "./career-hub/ProgressRings";
 
+// ─── Types ───
+type TabId = "latest" | "practice" | "earn";
 
-export default function CareerHubPage({ career: careerSlug }: { career: CareerSlug }) {
+interface ProgressData {
+  knowledge: { done: number; total: number };
+  skills: { done: number; total: number };
+  experience: { done: number; total: number };
+}
+
+// ─── Cluster color mapping ───
+const CLUSTER_COLORS: Record<string, string> = {
+  tech: "#3B82F6",
+  business: "#F59E0B",
+  science: "#10B981",
+  creative: "#F43F5E",
+};
+
+const TAB_ACTIVE_CLASSES: Record<TabId, string> = {
+  latest: "bg-blue-500/20 text-blue-400",
+  practice: "bg-emerald-500/20 text-emerald-400",
+  earn: "bg-amber-500/20 text-amber-400",
+};
+
+// ─── localStorage helpers ───
+function getProgressKey(slug: CareerSlug) {
+  return `ct-progress-${slug}`;
+}
+
+function loadProgress(slug: CareerSlug): ProgressData {
+  if (typeof window === "undefined") {
+    return {
+      knowledge: { done: 0, total: 10 },
+      skills: { done: 0, total: 6 },
+      experience: { done: 0, total: 0 },
+    };
+  }
+  try {
+    const stored = localStorage.getItem(getProgressKey(slug));
+    if (stored) return JSON.parse(stored);
+  } catch {}
+  return {
+    knowledge: { done: 0, total: 10 },
+    skills: { done: 0, total: 6 },
+    experience: { done: 0, total: 0 },
+  };
+}
+
+function saveProgress(slug: CareerSlug, data: ProgressData) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(getProgressKey(slug), JSON.stringify(data));
+  } catch {}
+}
+
+// ─── Cycle date helpers ───
+function getCurrentCycleDates(): { start: string; end: string } {
+  const now = new Date();
+  const day = now.getDate();
+  const month = now.getMonth();
+  const year = now.getFullYear();
+  const fmt = (d: Date) =>
+    d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  if (day <= 15) {
+    return {
+      start: fmt(new Date(year, month, 1)),
+      end: fmt(new Date(year, month, 15)),
+    };
+  }
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  return {
+    start: fmt(new Date(year, month, 16)),
+    end: fmt(new Date(year, month, lastDay)),
+  };
+}
+
+// ──────────────────────────────────────────────────────────────
+// Main Component
+// ──────────────────────────────────────────────────────────────
+export default function CareerHubPage({
+  career: careerSlug,
+}: {
+  career: CareerSlug;
+}) {
   const career = careerConfigs[careerSlug];
   const cluster = getClusterForCareer(careerSlug);
-  const articles = getArticlesByCategory(careerSlug);
-  const featuredArticles = articles.filter((a) => a.featured);
+  const clusterColor = CLUSTER_COLORS[career.cluster] || "#3B82F6";
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState<TabId>("latest");
+
+  // Progress state
+  const [progress, setProgress] = useState<ProgressData>(() =>
+    loadProgress(careerSlug)
+  );
+
+  // Notification dots (new content since last visit)
+  const [notifCounts, setNotifCounts] = useState({ latest: 0, earn: 0 });
+
+  // Cycle dates
+  const cycle = getCurrentCycleDates();
+
+  // Related careers
   const relatedCareers = getCareersByCluster(career.cluster)
     .filter((c) => c.slug !== careerSlug)
     .slice(0, 3);
 
+  // Existing articles count for Knowledge total
+  const articles = getArticlesByCategory(careerSlug);
+
+  // Update progress totals based on actual data
+  useEffect(() => {
+    setProgress((prev) => ({
+      ...prev,
+      knowledge: { ...prev.knowledge, total: Math.max(articles.length, 6) },
+    }));
+  }, [articles.length]);
+
+  // Save progress when it changes
+  useEffect(() => {
+    saveProgress(careerSlug, progress);
+  }, [progress, careerSlug]);
+
+  // Callback for child components to update progress
+  const updateProgress = useCallback(
+    (
+      ring: "knowledge" | "skills" | "experience",
+      increment: number = 1
+    ) => {
+      setProgress((prev) => ({
+        ...prev,
+        [ring]: {
+          ...prev[ring],
+          done: prev[ring].done + increment,
+        },
+      }));
+    },
+    []
+  );
+
   return (
     <>
-      {/* ===== HERO SECTION ===== */}
-      <section className="relative overflow-hidden hero-dark noise-overlay">
-        {/* Background elements */}
-        <div className="absolute inset-0 dot-pattern opacity-20" />
-        <div
-          className="absolute top-20 right-10 w-72 h-72 rounded-full blur-3xl opacity-20"
-          style={{ background: cluster.accent }}
-        />
-        <div className="absolute bottom-10 left-10 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl" />
-
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
+      {/* ═══════ HERO — light, soft ═══════ */}
+      <section className="bg-gradient-to-br from-gray-50 to-slate-100 border-b border-gray-200">
+        <div className="max-w-[900px] mx-auto px-6 pt-8 pb-7">
           {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-sm text-indigo-300/80 mb-6">
-            <Link href="/" className="hover:text-white transition-colors">Home</Link>
+          <nav className="flex items-center gap-1.5 text-xs text-gray-400 mb-5">
+            <Link href="/" className="hover:text-blue-500 transition-colors">
+              Home
+            </Link>
             <span>/</span>
-            <Link href="/#careers" className="hover:text-white transition-colors">Careers</Link>
+            <Link
+              href="/#careers"
+              className="hover:text-blue-500 transition-colors"
+            >
+              Careers
+            </Link>
             <span>/</span>
-            <span className="text-white">{career.title}</span>
+            <span className="text-gray-600 font-medium">{career.title}</span>
+          </nav>
+
+          {/* Title row */}
+          <div className="flex items-center gap-3.5 mb-2 flex-wrap">
+            <span className="text-4xl">{career.icon}</span>
+            <h1 className="text-[28px] font-extrabold text-gray-900 tracking-tight">
+              {career.title}
+            </h1>
+            <span
+              className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full"
+              style={{
+                background: cluster.accentBg,
+                color: cluster.accent,
+              }}
+            >
+              {clusterConfigs[career.cluster].title}
+            </span>
           </div>
 
-          <div className="flex flex-col lg:flex-row gap-10 items-start">
-            {/* Left - Title & Description */}
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-4xl">{career.icon}</span>
-                <span
-                  className={`text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ${cluster.badgeClass}`}
-                >
-                  {clusterConfigs[career.cluster].title}
-                </span>
-              </div>
+          {/* Description */}
+          <p className="text-sm text-gray-500 max-w-[540px] leading-relaxed mb-4">
+            {career.description}
+          </p>
 
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-4 tracking-tight leading-tight">
-                {career.title}
-              </h1>
-
-              <p className="text-lg text-indigo-200 leading-relaxed max-w-2xl">
-                {career.heroDescription}
-              </p>
-            </div>
-
-            {/* Right - Stats Card */}
-            <div className="glass-dark rounded-2xl p-6 min-w-[280px] w-full lg:w-auto">
-              <h3 className="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-4">
-                Career Snapshot
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <div className="text-xs text-indigo-400 mb-1">Avg. Salary</div>
-                  <div className="text-2xl font-extrabold text-white font-mono">
-                    {career.stats.avgSalary}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-indigo-400 mb-1">Growth Rate</div>
-                  <div className="text-2xl font-extrabold text-white font-mono">
-                    {career.stats.growthRate}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-indigo-400 mb-3">Top Roles</div>
-                  <div className="flex flex-wrap gap-2">
-                    {career.stats.topRoles.map((role) => (
-                      <span
-                        key={role}
-                        className="text-xs font-medium text-white/80 bg-white/10 px-2.5 py-1 rounded-full"
-                      >
-                        {role}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Wave separator */}
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
-            <path d="M0 60L60 55C120 50 240 40 360 35C480 30 600 30 720 35C840 40 960 50 1080 50C1200 50 1320 40 1380 35L1440 30V60H1380C1320 60 1200 60 1080 60C960 60 840 60 720 60C600 60 480 60 360 60C240 60 120 60 60 60H0Z" fill="white"/>
-          </svg>
-        </div>
-      </section>
-
-      {/* ===== FEATURED ARTICLES ===== */}
-      {featuredArticles.length > 0 && (
-        <section className="py-12 sm:py-16">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <div className="flex items-center gap-3 mb-8">
-              <h2 className="text-xl font-bold text-gray-900">
-                Start Here
-              </h2>
-              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${cluster.badgeClass} uppercase tracking-wide`}>
-                Featured
+          {/* Stats row */}
+          <div className="flex gap-2.5 flex-wrap">
+            <div className="bg-white border border-gray-200 rounded-lg px-3.5 py-1.5 inline-flex items-center gap-2">
+              <span className="text-[11px] text-gray-400">Avg Salary</span>
+              <span className="text-[13px] font-bold text-gray-800">
+                {career.stats.avgSalary}
               </span>
             </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredArticles.map((article) => (
-                <ArticleCard key={article.slug} article={article} />
-              ))}
+            <div className="bg-white border border-gray-200 rounded-lg px-3.5 py-1.5 inline-flex items-center gap-2">
+              <span className="text-[11px] text-gray-400">Growth</span>
+              <span className="text-[13px] font-bold text-gray-800">
+                ▲ {career.stats.growthRate}
+              </span>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-lg px-3.5 py-1.5 inline-flex items-center gap-2">
+              <span className="text-[11px] text-gray-400">Top Roles</span>
+              <span className="text-[13px] font-bold text-gray-800">
+                {career.stats.topRoles.join(" · ")}
+              </span>
             </div>
           </div>
-        </section>
-      )}
-
-      {/* ===== ALL ARTICLES ===== */}
-      <section className="py-12 sm:py-16">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          {articles.length > 0 ? (
-            <>
-              <h2 className="text-xl font-bold text-gray-900 mb-8">
-                All Articles & Guides
-                <span className="text-sm font-normal text-gray-400 ml-2">
-                  ({articles.length} {articles.length === 1 ? "article" : "articles"})
-                </span>
-              </h2>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {articles.map((article) => (
-                  <ArticleCard key={article.slug} article={article} />
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className="text-center py-16">
-              <span className="text-5xl mb-4 block">{career.icon}</span>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">
-                Content coming soon!
-              </h2>
-              <p className="text-gray-500 max-w-md mx-auto">
-                We&apos;re crafting amazing {career.title.toLowerCase()} guides and articles.
-                Subscribe below to get notified when they&apos;re ready.
-              </p>
-            </div>
-          )}
         </div>
       </section>
 
-      {/* ===== RELATED CAREERS ===== */}
+      {/* ═══════ STICKY PROGRESS BAR — DARK ═══════ */}
+      <div className="sticky top-[56px] z-40 bg-[#0f172a] border-b border-blue-500/20 shadow-lg shadow-black/15">
+        <div className="max-w-[900px] mx-auto px-6">
+          {/* Progress row */}
+          <div className="flex items-center justify-between py-3.5 flex-wrap gap-3">
+            <ProgressRings
+              progress={progress}
+              clusterColor={clusterColor}
+            />
+            <div className="text-right">
+              <div className="text-[11px] text-gray-400">
+                {cycle.start} – {cycle.end}
+              </div>
+              <div className="text-[11px] text-amber-400 mt-0.5">
+                🏆 Top students have completed 8/10 this cycle
+              </div>
+            </div>
+          </div>
+
+          {/* Tab row */}
+          <div className="flex gap-1 pb-2.5">
+            {(
+              [
+                { id: "latest" as TabId, label: "Latest", count: notifCounts.latest },
+                { id: "practice" as TabId, label: "Practice", count: 0 },
+                { id: "earn" as TabId, label: "Earn Now", count: notifCounts.earn },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`
+                  relative px-4 py-2 text-xs font-semibold rounded-md
+                  transition-all cursor-pointer border-none
+                  ${
+                    activeTab === tab.id
+                      ? TAB_ACTIVE_CLASSES[tab.id]
+                      : "text-gray-500 hover:text-gray-200 hover:bg-slate-800/60"
+                  }
+                `}
+              >
+                {tab.label}
+                {tab.count > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] font-bold text-white flex items-center justify-center">
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ═══════ CONTENT AREA ═══════ */}
+      <div className="bg-white min-h-[400px]">
+        <div className="max-w-[900px] mx-auto px-6 py-8">
+          {activeTab === "latest" && (
+            <LatestTab
+              careerSlug={careerSlug}
+              clusterColor={clusterColor}
+              onArticleRead={() => updateProgress("knowledge")}
+              onNewContentCount={(count) =>
+                setNotifCounts((prev) => ({ ...prev, latest: count }))
+              }
+            />
+          )}
+          {activeTab === "practice" && (
+            <PracticeTab
+              careerSlug={careerSlug}
+              clusterColor={clusterColor}
+              progress={progress.skills}
+              onComplete={() => updateProgress("skills")}
+            />
+          )}
+          {activeTab === "earn" && (
+            <EarnNowTab
+              careerSlug={careerSlug}
+              clusterColor={clusterColor}
+              onJobView={() => updateProgress("experience")}
+              onNewJobCount={(count) =>
+                setNotifCounts((prev) => ({ ...prev, earn: count }))
+              }
+            />
+          )}
+        </div>
+      </div>
+
+      {/* ═══════ RELATED CAREERS ═══════ */}
       {relatedCareers.length > 0 && (
-        <section className="py-12 bg-gray-50/50">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">
+        <section className="border-t border-gray-200 bg-gray-50">
+          <div className="max-w-[900px] mx-auto px-6 py-8">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-3.5">
               Related Career Paths
-            </h2>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
               {relatedCareers.map((related) => {
                 const relCluster = clusterConfigs[related.cluster];
                 return (
                   <Link
                     key={related.slug}
                     href={`/careers/${related.slug}`}
-                    className="group flex items-center gap-4 bg-white rounded-xl border border-gray-100 p-5 hover:shadow-md transition-all hover:-translate-y-0.5"
+                    className="group flex items-center gap-2.5 bg-white border border-gray-200 rounded-xl p-4 hover:border-gray-300 hover:shadow-sm transition-all"
                   >
-                    <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                      style={{ background: relCluster.accentBg }}
-                    >
-                      {related.icon}
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors truncate">
+                    <span className="text-[22px]">{related.icon}</span>
+                    <div>
+                      <div className="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
                         {related.shortTitle}
-                      </h3>
-                      <p className="text-xs text-gray-500 truncate">
-                        {related.stats.avgSalary} avg &middot; {related.stats.growthRate} growth
-                      </p>
+                      </div>
+                      <span className="text-[11px] text-emerald-600">
+                        ▲ {related.stats.growthRate} growth
+                      </span>
                     </div>
-                    <svg
-                      className="w-5 h-5 text-gray-300 group-hover:text-indigo-400 transition-colors ml-auto flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
                   </Link>
                 );
               })}
@@ -200,13 +340,6 @@ export default function CareerHubPage({ career: careerSlug }: { career: CareerSl
           </div>
         </section>
       )}
-
-      {/* ===== NEWSLETTER CTA ===== */}
-      <section className="py-12">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6">
-          <NewsletterCTA careerSlug={careerSlug} />
-        </div>
-      </section>
     </>
   );
 }
