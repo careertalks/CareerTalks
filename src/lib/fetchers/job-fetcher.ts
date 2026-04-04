@@ -232,10 +232,12 @@ function scoreRelevance(
     }
   }
 
-  // CRITICAL: Require at least one title-level match.
-  // Tag-only matches are too noisy (e.g., "Office Assistant" tagged "frontend",
-  // "Content Reviewer" tagged "AI/ML", "Customer Care Rep" tagged "Banking").
-  if (titleMatchCount === 0) return 0;
+  // Require either:
+  //   (a) at least one title-level match, OR
+  //   (b) 2+ tag keyword matches (a single tag match is noisy, but 2+ is a strong signal)
+  // This prevents "Office Assistant" tagged "frontend" (1 tag) from appearing in
+  // software-dev, but ALLOWS "Junior Analyst" tagged "data-science" + "machine-learning".
+  if (titleMatchCount === 0 && tagMatchCount < 2) return 0;
 
   const totalMatches = titleMatchCount + tagMatchCount;
   if (totalMatches === 0) return 0;
@@ -455,8 +457,9 @@ async function fetchHimalayas(
 ): Promise<JobListing[]> {
   try {
     // Fetch a large batch — we'll filter aggressively
+    // 150 gives us a wider pool of careers to match from
     const res = await fetch(
-      `https://himalayas.app/jobs/api?limit=50`,
+      `https://himalayas.app/jobs/api?limit=150`,
       { next: { revalidate: 3600 } }
     );
 
@@ -718,7 +721,7 @@ export async function fetchJobsForCareer(
   const countries = adzunaCountries || ["us", "in"];
 
   // Fetch MORE than needed so we have room after filtering
-  const fetchLimit = Math.min(limit * 3, 50);
+  const fetchLimit = Math.min(limit * 4, 80);
 
   const indiaKeywords = india || [];
 

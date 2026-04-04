@@ -80,7 +80,7 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       { url: "https://economictimes.indiatimes.com/tech/rssfeeds/13357270.cms", name: "ET Tech", type: "news", frequency: "daily", region: "india" },
     ],
     jobKeywords: {
-      primary: ["data analyst", "data science", "machine learning", "AI", "data engineer", "analytics"],
+      primary: ["data analyst", "data science", "machine learning", "AI", "data engineer", "analytics", "NLP", "deep learning"],
       india: ["data analyst", "machine learning intern", "AI trainee"],
       exclude: ["director", "VP", "chief"],
       remotiveCategory: "software-dev",
