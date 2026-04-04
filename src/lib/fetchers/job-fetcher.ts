@@ -4,16 +4,19 @@
  * AUDIENCE: 17–24 year-olds (students, graduates, early-career aspirants)
  *
  * Three layers of filtering:
- *   1. Seniority filter — removes Senior, Director, VP, Principal, etc.
- *   2. Relevance scoring — matches job title/tags against career keywords
+ *   1. Seniority filter — removes Senior, Director, VP, Principal, Lead, Manager, etc.
+ *   2. Relevance scoring — matches job title/tags/categories against career keywords
  *   3. Type prioritization — boosts internships, part-time, freelance, entry-level
  *
- * Sources (all free, no API key for Tier 1):
- *   Tier 1 (no auth): Remotive, Jobicy
- *   Tier 2 (free key): Adzuna
- *   NOTE: Himalayas keyword filtering is non-functional (returns same jobs
- *         regardless of params) — disabled until they fix their API.
- *         The Muse category param is also unreliable — disabled.
+ * Sources (all free, no API key required):
+ *   - Remotive (category-based or keyword search)
+ *   - Jobicy (tag-based, multiple keywords in parallel)
+ *   - Himalayas (fetch latest, client-side filtering via categories + seniority)
+ *   - Adzuna (optional, requires free API key)
+ *
+ * Himalayas NOTE: Their keyword/search params don't work (returns same jobs
+ * regardless of query). Instead we fetch their latest listings and filter
+ * client-side using their rich `categories` and `seniority` fields.
  *
  * Usage:
  *   const jobs = await fetchJobsForCareer("ai-data-science");
@@ -34,7 +37,7 @@ export interface JobListing {
   salaryRange?: string;
   url: string;
   postedAt: string; // ISO date string
-  source: "remotive" | "jobicy" | "adzuna";
+  source: "remotive" | "jobicy" | "adzuna" | "himalayas";
   tags?: string[];
   remote: boolean;
 }
@@ -49,24 +52,47 @@ export interface JobFetchResult {
 
 // ─── Seniority Filter (audience: 17–24 yr olds) ─────────────────────
 
-/** Title patterns that indicate senior/leadership roles (7+ yrs experience) */
+/** Title patterns that indicate senior/leadership roles */
 const SENIOR_TITLE_PATTERNS = [
   /\bsenior\b/i,
-  /\bsr\.?\b/i,
+  /\bsr\.?\s/i,
   /\bdirector\b/i,
   /\bvp\b/i,
   /\bvice\s*president\b/i,
   /\bprincipal\b/i,
-  /\bstaff\b/i,
+  /\bstaff\s+(engineer|developer|designer|scientist)\b/i,
   /\bhead\s+of\b/i,
   /\bchief\b/i,
-  /\bc[a-z]o\b/i,      // CTO, CFO, COO, etc.
-  /\barchitect\b/i,     // Solutions Architect, etc. — usually 8+ yrs
-  /\blead\s+(engineer|developer|designer|manager)\b/i,
+  /\bc[a-z]o\b/i, // CTO, CFO, COO, etc.
+  /\barchitect\b/i, // Solutions Architect, etc. — usually 8+ yrs
+  /\blead\b/i, // Tech Lead, Lead Engineer, etc. — all "lead" roles are 5+ yrs
+  /\bmanager\b/i, // Account Manager, Engineering Manager, etc. — usually 5+ yrs
   /\bengineering\s+manager\b/i,
   /\bmanaging\s+director\b/i,
-  /\bpartner\b/i,        // law/consulting
-  /\b(7|8|9|10|12|15)\+?\s*years?\b/i,  // explicit experience requirements
+  /\bpartner\b/i, // law/consulting
+  /\b(5|6|7|8|9|10|12|15)\+?\s*years?\b/i, // explicit experience requirements
+  /\b(5|6|7|8|9|10|12|15)\+?\s*yrs?\b/i,
+];
+
+/**
+ * Title substrings where "manager" or "lead" is VALID for entry-level
+ * (e.g., "Lead Generation Specialist" is NOT a "Lead" role)
+ */
+const SENIORITY_EXCEPTIONS = [
+  /\blead\s+generat/i, // lead generation
+  /\bproject\s+coordinator\b/i,
+  /\baccount\s+coordinator\b/i,
+  /\bmanager\s+trainee\b/i,
+  /\btrainee\s+manager\b/i,
+  /\bassistant\s+manager\b/i,
+  /\bjunior\b/i,
+  /\bjr\b/i,
+  /\bintern\b/i,
+  /\btrainee\b/i,
+  /\bentry[\s-]?level\b/i,
+  /\bapprentice\b/i,
+  /\bfresher\b/i,
+  /\bgraduate\b/i,
 ];
 
 /** Title patterns that indicate entry-level / student-friendly roles */
@@ -88,20 +114,28 @@ const ENTRY_LEVEL_BOOST_PATTERNS = [
   /\bcontract\b/i,
   /\bcoordinator\b/i,
   /\bassistant\b/i,
-  /\banalyst\b/i,   // usually 0-3 yrs
-  /\bexecutive\b/i,  // in India this = entry-level (not exec)
+  /\banalyst\b/i, // usually 0-3 yrs
+  /\bexecutive\b/i, // in India this = entry-level (not exec)
+  /\brepresentative\b/i,
+  /\bspecialist\b/i,
+  /\btutor\b/i,
 ];
 
 /**
  * Returns true if the job title indicates a senior role.
- * Architecture roles are an exception for the architecture-planning career.
+ * Checks both title patterns and exceptions (e.g., "Junior Manager" is NOT senior).
  */
 function isSeniorRole(title: string, careerSlug?: CareerSlug): boolean {
   const lower = title.toLowerCase();
 
+  // Check exceptions first — if any exception matches, it's NOT senior
+  if (SENIORITY_EXCEPTIONS.some((p) => p.test(lower))) {
+    return false;
+  }
+
   // Exception: "architect" is valid for architecture-planning career
   if (careerSlug === "architecture-planning" && /\barchitect\b/i.test(lower)) {
-    // Only flag if it also has "senior", "principal", etc.
+    // Only flag if it also has other senior markers (Senior Architect, etc.)
     const otherSeniorPatterns = SENIOR_TITLE_PATTERNS.filter(
       (p) => !p.source.includes("architect")
     );
@@ -159,9 +193,12 @@ function scoreRelevance(
       continue;
     }
 
-    // Individual term matches (partial relevance)
-    const termMatches = terms.filter((t) => t.length > 3 && combined.includes(t));
-    if (termMatches.length > 0) {
+    // Individual term matches — only count if the term is specific enough
+    // (4+ chars to avoid matching "AI" or "HR" in random words)
+    const termMatches = terms.filter(
+      (t) => t.length > 3 && combined.includes(t)
+    );
+    if (termMatches.length > 0 && termMatches.length >= terms.length * 0.5) {
       score += 0.3 * (termMatches.length / terms.length);
       matchCount++;
     }
@@ -352,6 +389,129 @@ async function fetchJobicy(
   }
 }
 
+// ─── Himalayas (No Auth, Client-Side Filtering) ─────────────────────
+
+interface HimalayasJob {
+  title: string;
+  companyName: string;
+  companyLogo: string;
+  applicationLink: string;
+  guid: string;
+  pubDate: number; // Unix timestamp
+  categories: string[];
+  seniority: string[];
+  jobType: string | null;
+  locationRestrictions: string[];
+  excerpt: string;
+}
+
+/** Himalayas seniority values that are OK for our audience */
+const HIMALAYAS_OK_SENIORITY = new Set(["Entry-level", "Mid-level"]);
+
+/**
+ * Fetch from Himalayas with client-side relevance filtering.
+ * Their API returns latest jobs regardless of query params, so we:
+ *   1. Fetch 50 latest jobs
+ *   2. Filter by seniority (Entry-level or Mid-level only)
+ *   3. Match `categories` against career keywords for relevance
+ */
+async function fetchHimalayas(
+  keywords: string[],
+  limit = 20
+): Promise<JobListing[]> {
+  try {
+    // Fetch a large batch — we'll filter aggressively
+    const res = await fetch(
+      `https://himalayas.app/jobs/api?limit=50`,
+      { next: { revalidate: 3600 } }
+    );
+
+    if (!res.ok) return [];
+    const data = await res.json();
+    const jobs: HimalayasJob[] = data.jobs || [];
+
+    // Build keyword matchers (lowercase, hyphenated for Himalayas categories)
+    const kwLower = keywords.map((k) => k.toLowerCase());
+    const kwHyphenated = keywords.map((k) =>
+      k.toLowerCase().replace(/\s+/g, "-")
+    );
+
+    const matched: JobListing[] = [];
+
+    for (const j of jobs) {
+      // Step 1: Filter by seniority (only Entry-level and Mid-level)
+      const seniority = j.seniority || [];
+      const seniorityOk =
+        seniority.length === 0 ||
+        seniority.some((s) => HIMALAYAS_OK_SENIORITY.has(s));
+      if (!seniorityOk) continue;
+
+      // Step 2: Check category relevance
+      const cats = (j.categories || []).map((c) => c.toLowerCase());
+      const catsJoined = cats.join(" ");
+
+      let relevant = false;
+      for (const kw of kwLower) {
+        if (catsJoined.includes(kw)) {
+          relevant = true;
+          break;
+        }
+      }
+      if (!relevant) {
+        // Also try hyphenated form (Himalayas uses "Product-Management" style)
+        for (const kw of kwHyphenated) {
+          if (cats.some((c) => c.includes(kw))) {
+            relevant = true;
+            break;
+          }
+        }
+      }
+      if (!relevant) {
+        // Last check: title contains any keyword
+        const titleLower = j.title.toLowerCase();
+        for (const kw of kwLower) {
+          if (titleLower.includes(kw)) {
+            relevant = true;
+            break;
+          }
+        }
+      }
+
+      if (!relevant) continue;
+
+      // Map to our format
+      const postedAt = j.pubDate
+        ? new Date(j.pubDate * 1000).toISOString()
+        : new Date().toISOString();
+
+      matched.push({
+        id: `himalayas-${j.guid || j.title.replace(/\s+/g, "-").toLowerCase()}`,
+        title: j.title,
+        company: j.companyName,
+        companyLogo: j.companyLogo || undefined,
+        location:
+          j.locationRestrictions?.length > 0
+            ? j.locationRestrictions.join(", ")
+            : "Remote",
+        type: mapJobType(j.jobType || "full_time"),
+        salaryRange: undefined, // Himalayas doesn't expose salary in API
+        url: j.applicationLink || j.guid,
+        postedAt,
+        source: "himalayas",
+        tags: (j.categories || []).slice(0, 5),
+        remote: true,
+      });
+
+      if (matched.length >= limit) break;
+    }
+
+    return matched;
+  } catch (e) {
+    console.error("[JobFetcher] Himalayas error:", e);
+    return [];
+  }
+}
+
 // ─── Adzuna (Requires Free API Key) ─────────────────────────────────
 
 interface AdzunaJob {
@@ -474,10 +634,7 @@ function mapJobType(raw: string): JobListing["type"] {
   const lower = (raw || "").toLowerCase().replace(/[_-]/g, "");
   if (lower.includes("fulltime") || lower === "permanent") return "full-time";
   if (lower.includes("parttime")) return "part-time";
-  if (
-    lower.includes("contract") ||
-    lower.includes("temporary")
-  )
+  if (lower.includes("contract") || lower.includes("temporary"))
     return "contract";
   if (lower.includes("freelance")) return "freelance";
   if (lower.includes("internship") || lower.includes("intern"))
@@ -506,7 +663,7 @@ function deduplicateJobs(jobs: JobListing[]): JobListing[] {
  * Fetches jobs from all available APIs for a given career slug.
  *
  * Pipeline:
- *   1. Fetch from Remotive + Jobicy + Adzuna in parallel (broader fetch)
+ *   1. Fetch from Remotive + Jobicy + Himalayas + Adzuna in parallel
  *   2. Remove senior/leadership titles (audience = 17–24 yr olds)
  *   3. Score relevance against career keywords (drop irrelevant ones)
  *   4. Sort by: type priority (intern > part-time > freelance > contract > full-time)
@@ -543,11 +700,12 @@ export async function fetchJobsForCareer(
 
   const indiaKeywords = india || [];
 
-  // Run working fetchers in parallel (Himalayas and TheMuse are disabled)
-  const [remotiveJobs, jobicyJobs, adzunaJobs, jobicyIndia] =
+  // Run ALL fetchers in parallel
+  const [remotiveJobs, jobicyJobs, himalayasJobs, adzunaJobs, jobicyIndia] =
     await Promise.allSettled([
       fetchRemotive(primary, remotiveCategory, fetchLimit),
       fetchJobicy(primary, fetchLimit),
+      fetchHimalayas(primary, fetchLimit),
       fetchAdzuna(primary, adzunaCategory, countries, fetchLimit),
       // Bonus India-specific query via Jobicy
       indiaKeywords.length > 0
@@ -562,6 +720,7 @@ export async function fetchJobsForCareer(
   const results = [
     { result: remotiveJobs, name: "Remotive" },
     { result: jobicyJobs, name: "Jobicy" },
+    { result: himalayasJobs, name: "Himalayas" },
     { result: adzunaJobs, name: "Adzuna" },
     { result: jobicyIndia, name: "Jobicy" },
   ];
@@ -580,7 +739,8 @@ export async function fetchJobsForCareer(
     (j) => j.url && j.url.startsWith("http")
   );
 
-  // Step 2: Remove senior/leadership roles
+  // Step 2: Remove senior/leadership roles (title-based, for non-Himalayas)
+  // Note: Himalayas jobs already filtered by seniority field in fetchHimalayas()
   filtered = filtered.filter((j) => !isSeniorRole(j.title, slug));
 
   // Step 3: Score relevance and remove irrelevant jobs
@@ -592,7 +752,16 @@ export async function fetchJobsForCareer(
   }));
 
   // Keep only jobs with actual relevance to the career track
-  const relevant = scored.filter((s) => s.relevance > 0);
+  // Himalayas jobs that passed category filtering get a baseline relevance
+  const relevant = scored.filter((s) => {
+    if (s.relevance > 0) return true;
+    // Himalayas jobs already passed category match — give them a pass
+    // if they have decent tags
+    if (s.job.source === "himalayas" && (s.job.tags?.length || 0) > 0) {
+      return true;
+    }
+    return false;
+  });
 
   // Step 4: Sort — entry-level/intern first, then by relevance + type priority
   relevant.sort((a, b) => {

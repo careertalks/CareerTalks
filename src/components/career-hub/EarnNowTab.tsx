@@ -275,9 +275,8 @@ export default function EarnNowTab({
       {/* Disclaimer */}
       <div className="mt-5 text-center">
         <p className="text-[10px] text-gray-400 max-w-md mx-auto leading-relaxed">
-          These opportunities are sourced from Remotive, Jobicy, Himalayas,
-          Adzuna &amp; The Muse. CareerTalks does not employ or endorse these
-          listings.
+          These opportunities are sourced from Remotive, Jobicy, Himalayas
+          &amp; Adzuna. CareerTalks does not employ or endorse these listings.
         </p>
       </div>
     </div>
