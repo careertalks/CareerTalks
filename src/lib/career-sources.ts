@@ -38,6 +38,10 @@ export interface JobSearchKeywords {
   adzunaCategory?: string;
   /** Adzuna countries to query (default: ["us", "in"]) */
   adzunaCountries?: string[];
+  /** The Muse API category (e.g., "Software Engineering", "Data Science") */
+  museCategory?: string;
+  /** Additional Muse categories to query in parallel */
+  museCategories?: string[];
 }
 
 export interface ContentTags {
@@ -89,6 +93,8 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       remotiveCategories: ["software-development", "ai-ml", "data"],
       adzunaCategory: "it-jobs",
       adzunaCountries: ["us", "in", "gb"],
+      museCategory: "Data Science",
+      museCategories: ["Data Science", "Data and Analytics", "Computer and IT"],
     },
     contentTags: {
       devto: ["ai", "machinelearning", "datascience", "python"],
@@ -119,6 +125,8 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       remotiveCategory: "software-development",
       adzunaCategory: "it-jobs",
       adzunaCountries: ["us", "in", "gb"],
+      museCategory: "Software Engineering",
+      museCategories: ["Software Engineering", "Computer and IT"],
     },
     contentTags: {
       devto: ["webdev", "javascript", "react", "typescript", "devops"],
@@ -150,6 +158,8 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       remotiveCategories: ["all-others", "finance"],
       adzunaCategory: "accounting-finance-jobs",
       adzunaCountries: ["us", "in", "gb"],
+      museCategory: "Accounting",
+      museCategories: ["Accounting", "Business Operations"],
     },
     contentTags: {
       devto: ["fintech", "blockchain", "cryptocurrency"],
@@ -178,6 +188,8 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       remotiveCategory: "software-development",
       adzunaCategory: "engineering-jobs",
       adzunaCountries: ["us", "in", "gb"],
+      museCategory: "Science and Engineering",
+      museCategories: ["Science and Engineering", "Computer and IT"],
     },
     contentTags: {
       devto: ["networking", "devops", "cloud"],
@@ -209,6 +221,8 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       remotiveCategories: ["project-management", "product"],
       adzunaCategory: "it-jobs",
       adzunaCountries: ["us", "in", "gb"],
+      museCategory: "Product",
+      museCategories: ["Product", "Project Management"],
     },
     contentTags: {
       devto: ["productmanagement", "agile", "startup"],
@@ -244,6 +258,8 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       remotiveCategory: "sales",
       adzunaCategory: "consultancy-jobs",
       adzunaCountries: ["us", "in", "gb"],
+      museCategory: "Business Operations",
+      museCategories: ["Business Operations", "Accounting"],
     },
     contentTags: {
       devto: ["entrepreneurship", "startup", "business"],
@@ -273,6 +289,8 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       remotiveCategory: "all-others",
       adzunaCategory: "logistics-warehouse-jobs",
       adzunaCountries: ["us", "in", "gb"],
+      museCategory: "Transportation and Logistics",
+      museCategories: ["Transportation and Logistics", "Manufacturing and Warehouse"],
     },
     contentTags: {
       devto: ["logistics", "ecommerce"],
@@ -302,6 +320,7 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       remotiveCategory: "marketing",
       adzunaCategory: "marketing-jobs",
       adzunaCountries: ["us", "in", "gb"],
+      museCategory: "Marketing",
     },
     contentTags: {
       devto: ["marketing", "seo", "contentmarketing"],
@@ -329,6 +348,7 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       exclude: ["director", "VP"],
       adzunaCategory: "property-jobs",
       adzunaCountries: ["us", "in", "gb"],
+      museCategory: "Real Estate",
     },
     contentTags: {
       devto: ["realestate"],
@@ -356,6 +376,7 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       remotiveCategory: "customer-service",
       adzunaCategory: "hospitality-catering-jobs",
       adzunaCountries: ["us", "in", "gb"],
+      museCategory: "Food and Hospitality Services",
     },
     contentTags: {
       devto: [],
@@ -388,6 +409,8 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       remotiveCategory: "all-others",
       adzunaCategory: "energy-oil-gas-jobs",
       adzunaCountries: ["us", "in", "gb"],
+      museCategory: "Energy Generation and Mining",
+      museCategories: ["Energy Generation and Mining", "Science and Engineering"],
     },
     contentTags: {
       devto: ["sustainability", "greentech"],
@@ -418,6 +441,8 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       remotiveCategories: ["all-others", "medical"],
       adzunaCategory: "scientific-qa-jobs",
       adzunaCountries: ["us", "in", "gb"],
+      museCategory: "Science and Engineering",
+      museCategories: ["Science and Engineering", "Healthcare"],
     },
     contentTags: {
       devto: ["bioinformatics", "science"],
@@ -447,6 +472,8 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       remotiveCategory: "all-others",
       adzunaCategory: "engineering-jobs",
       adzunaCountries: ["us", "in", "gb"],
+      museCategory: "Science and Engineering",
+      museCategories: ["Science and Engineering", "Manufacturing and Warehouse"],
     },
     contentTags: {
       devto: ["iot", "embedded", "automotive"],
@@ -477,6 +504,7 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       remotiveCategories: ["all-others", "medical"],
       adzunaCategory: "healthcare-nursing-jobs",
       adzunaCountries: ["us", "in", "gb"],
+      museCategory: "Healthcare",
     },
     contentTags: {
       devto: ["healthcare", "healthtech"],
@@ -510,6 +538,7 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       remotiveCategories: ["all-others", "legal"],
       adzunaCategory: "legal-jobs",
       adzunaCountries: ["us", "in", "gb"],
+      museCategory: "Legal Services",
     },
     contentTags: {
       devto: ["legal", "legaltech"],
@@ -538,6 +567,7 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       remotiveCategory: "all-others",
       adzunaCategory: "creative-design-jobs",
       adzunaCountries: ["us", "in", "gb"],
+      museCategory: "Design and UX",
     },
     contentTags: {
       devto: ["fashion"],
@@ -567,6 +597,8 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       remotiveCategories: ["customer-service", "human-resources"],
       adzunaCategory: "hr-jobs",
       adzunaCountries: ["us", "in", "gb"],
+      museCategory: "HR and Recruitment",
+      museCategories: ["HR and Recruitment", "Business Operations"],
     },
     contentTags: {
       devto: ["hr", "hiring"],
@@ -595,6 +627,8 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       remotiveCategory: "all-others",
       adzunaCategory: "creative-design-jobs",
       adzunaCountries: ["us", "in", "gb"],
+      museCategory: "Design and UX",
+      museCategories: ["Design and UX", "Science and Engineering"],
     },
     contentTags: {
       devto: ["architecture"],
@@ -624,6 +658,7 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       remotiveCategories: ["all-others", "education"],
       adzunaCategory: "teaching-jobs",
       adzunaCountries: ["us", "in", "gb"],
+      museCategory: "Education",
     },
     contentTags: {
       devto: ["education", "edtech"],
@@ -653,6 +688,7 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       remotiveCategories: ["software-development", "design"],
       adzunaCategory: "creative-design-jobs",
       adzunaCountries: ["us", "in", "gb"],
+      museCategory: "Design and UX",
     },
     contentTags: {
       devto: ["design", "ux", "ui", "css"],

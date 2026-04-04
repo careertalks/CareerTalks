@@ -8,11 +8,13 @@
  *   2. Relevance scoring — matches job title/tags/categories against career keywords
  *   3. Type prioritization — boosts internships, part-time, freelance, entry-level
  *
- * Sources (all free, no API key required):
- *   - Remotive (category-based or keyword search)
- *   - Jobicy (tag-based, multiple keywords in parallel)
- *   - Himalayas (fetch latest, client-side filtering via categories + seniority)
- *   - Adzuna (optional, requires free API key)
+ * Sources (all free):
+ *   - Remotive (category-based or keyword search, no auth)
+ *   - Jobicy (tag-based, multiple keywords in parallel, no auth)
+ *   - Himalayas (fetch latest, client-side filtering, no auth)
+ *   - Adzuna (requires free API key via ADZUNA_APP_ID + ADZUNA_APP_KEY)
+ *   - The Muse (optional free API key via MUSE_API_KEY, supports Entry Level filter)
+ *   - RemoteOK (no auth, client-side keyword filtering)
  *
  * Himalayas NOTE: Their keyword/search params don't work (returns same jobs
  * regardless of query). Instead we fetch their latest listings and filter
@@ -37,7 +39,7 @@ export interface JobListing {
   salaryRange?: string;
   url: string;
   postedAt: string; // ISO date string
-  source: "remotive" | "jobicy" | "adzuna" | "himalayas";
+  source: "remotive" | "jobicy" | "adzuna" | "himalayas" | "themuse" | "remoteok";
   tags?: string[];
   remote: boolean;
 }
@@ -691,6 +693,204 @@ async function fetchAdzuna(
   return allJobs.slice(0, limit);
 }
 
+// ─── The Muse (Free API Key) ─────────────────────────────────────────
+
+interface MuseJob {
+  id: number;
+  name: string; // job title
+  company: { name: string };
+  locations: { name: string }[];
+  levels: { name: string; short_name: string }[];
+  categories: { name: string }[];
+  refs: { landing_page: string };
+  publication_date: string;
+  type?: string;
+}
+
+/**
+ * Fetch from The Muse API with category and level filters.
+ * API key is optional (higher rate limit with key).
+ * Supports "Entry Level" and "Internship" level filters — perfect for 17-24 audience.
+ */
+async function fetchTheMuse(
+  keywords: string[],
+  museCategory?: string,
+  museCategories?: string[],
+  limit = 20
+): Promise<JobListing[]> {
+  try {
+    const apiKey = process.env.MUSE_API_KEY;
+    const cats = museCategories || (museCategory ? [museCategory] : []);
+    if (cats.length === 0) return [];
+
+    // Fetch from multiple categories in parallel
+    const perCat = Math.ceil(limit / cats.length);
+    const catResults = await Promise.allSettled(
+      cats.map(async (cat) => {
+        const params = new URLSearchParams({
+          page: "0",
+          category: cat,
+        });
+        // Add entry-level filter to get age-appropriate jobs
+        params.append("level", "Entry Level");
+        params.append("level", "Internship");
+        if (apiKey) params.set("api_key", apiKey);
+
+        const url = `https://www.themuse.com/api/public/jobs?${params}`;
+        const res = await fetch(url, { next: { revalidate: 3600 } });
+        if (!res.ok) {
+          console.error(`[JobFetcher] TheMuse (${cat}) HTTP ${res.status}`);
+          return [];
+        }
+        const data = await res.json();
+        return (data.results || []).slice(0, perCat) as MuseJob[];
+      })
+    );
+
+    const allJobs: MuseJob[] = [];
+    for (const r of catResults) {
+      if (r.status === "fulfilled") allJobs.push(...r.value);
+    }
+
+    return allJobs.slice(0, limit).map(
+      (j: MuseJob): JobListing => {
+        const location = j.locations?.map((l) => l.name).join(", ") || "US";
+        const isRemote =
+          location.toLowerCase().includes("remote") ||
+          location.toLowerCase().includes("flexible");
+        const level = j.levels?.[0]?.short_name || "";
+        const jobType: JobListing["type"] =
+          level === "internship"
+            ? "internship"
+            : level === "entry"
+            ? "full-time"
+            : "full-time";
+
+        return {
+          id: `muse-${j.id}`,
+          title: j.name,
+          company: j.company?.name || "Unknown",
+          location,
+          type: jobType,
+          salaryRange: undefined, // Muse doesn't expose salary
+          url: j.refs?.landing_page || `https://www.themuse.com/jobs/${j.id}`,
+          postedAt: j.publication_date || new Date().toISOString(),
+          source: "themuse",
+          tags: (j.categories || []).map((c) => c.name),
+          remote: isRemote,
+        };
+      }
+    );
+  } catch (e) {
+    console.error("[JobFetcher] TheMuse error:", e);
+    return [];
+  }
+}
+
+// ─── RemoteOK (Free, No Auth) ───────────────────────────────────────
+
+interface RemoteOKJob {
+  id: string;
+  epoch: string;
+  position: string;
+  company: string;
+  company_logo: string;
+  tags: string[];
+  location: string;
+  salary_min?: number;
+  salary_max?: number;
+  url: string;
+  apply_url?: string;
+}
+
+/**
+ * Fetch from RemoteOK API with client-side keyword filtering.
+ * Returns all remote jobs as JSON — we filter by keywords/tags.
+ * Attribution required: must link back to RemoteOK.
+ */
+async function fetchRemoteOK(
+  keywords: string[],
+  limit = 20
+): Promise<JobListing[]> {
+  try {
+    const res = await fetch("https://remoteok.com/api", {
+      next: { revalidate: 3600 },
+      headers: {
+        "User-Agent": "CareerTalks/1.0",
+      },
+    });
+
+    if (!res.ok) {
+      console.error(`[JobFetcher] RemoteOK HTTP ${res.status}`);
+      return [];
+    }
+
+    const data = await res.json();
+    // RemoteOK returns an array; first element is metadata/legal notice
+    const jobs: RemoteOKJob[] = Array.isArray(data)
+      ? data.filter((item: RemoteOKJob) => item.position)
+      : [];
+
+    // Build keyword regexes for client-side filtering
+    const kwRegexes = keywords.map((k) => keywordRegex(k));
+
+    const matched: JobListing[] = [];
+
+    for (const j of jobs) {
+      const titleLower = (j.position || "").toLowerCase();
+      const tagsLower = (j.tags || []).map((t) => t.toLowerCase()).join(" ");
+      const searchText = `${titleLower} ${tagsLower}`;
+
+      // Check if any keyword matches in title or tags
+      let titleMatch = false;
+      let tagMatchCount = 0;
+      for (const re of kwRegexes) {
+        if (re.test(titleLower)) {
+          titleMatch = true;
+          break;
+        }
+        if (re.test(tagsLower)) {
+          tagMatchCount++;
+        }
+      }
+
+      // Same rule as Himalayas: title match OR 2+ tag matches
+      if (!titleMatch && tagMatchCount < 2) continue;
+
+      let salaryRange: string | undefined;
+      if (j.salary_min && j.salary_max) {
+        salaryRange = `$${formatSalary(j.salary_min)} – $${formatSalary(j.salary_max)}`;
+      }
+
+      const postedAt = j.epoch
+        ? new Date(Number(j.epoch) * 1000).toISOString()
+        : new Date().toISOString();
+
+      matched.push({
+        id: `remoteok-${j.id}`,
+        title: j.position,
+        company: j.company || "Unknown",
+        companyLogo: j.company_logo || undefined,
+        location: j.location || "Remote",
+        type: mapJobType(titleLower.includes("intern") ? "internship" : "full_time"),
+        salaryRange,
+        url: j.apply_url || j.url || `https://remoteok.com/l/${j.id}`,
+        postedAt,
+        source: "remoteok",
+        tags: j.tags || [],
+        remote: true,
+      });
+
+      if (matched.length >= limit) break;
+    }
+
+    return matched;
+  } catch (e) {
+    console.error("[JobFetcher] RemoteOK error:", e);
+    return [];
+  }
+}
+
 // ─── Utilities ───────────────────────────────────────────────────────
 
 function mapJobType(raw: string): JobListing["type"] {
@@ -756,6 +956,8 @@ export async function fetchJobsForCareer(
     remotiveCategories,
     adzunaCategory,
     adzunaCountries,
+    museCategory,
+    museCategories,
   } = config.jobKeywords;
   const countries = adzunaCountries || ["us", "in"];
 
@@ -778,7 +980,7 @@ export async function fetchJobsForCareer(
   }
 
   // Run ALL fetchers in parallel
-  const [remotiveResults, jobicyJobs, himalayasJobs, adzunaJobs, jobicyIndia] =
+  const [remotiveResults, jobicyJobs, himalayasJobs, adzunaJobs, jobicyIndia, museJobs, remoteokJobs] =
     await Promise.allSettled([
       Promise.allSettled(remotiveFetches).then((results) =>
         results.flatMap((r) => (r.status === "fulfilled" ? r.value : []))
@@ -790,6 +992,10 @@ export async function fetchJobsForCareer(
       indiaKeywords.length > 0
         ? fetchJobicy(indiaKeywords.slice(0, 1), Math.ceil(fetchLimit / 2))
         : Promise.resolve([]),
+      // The Muse — category + entry-level filter
+      fetchTheMuse(primary, museCategory, museCategories, fetchLimit),
+      // RemoteOK — keyword-based client-side filtering
+      fetchRemoteOK(primary, fetchLimit),
     ]);
 
   // Collect all successful results
@@ -802,6 +1008,8 @@ export async function fetchJobsForCareer(
     { result: himalayasJobs, name: "Himalayas" },
     { result: adzunaJobs, name: "Adzuna" },
     { result: jobicyIndia, name: "Jobicy" },
+    { result: museJobs, name: "TheMuse" },
+    { result: remoteokJobs, name: "RemoteOK" },
   ];
 
   for (const { result, name } of results) {
