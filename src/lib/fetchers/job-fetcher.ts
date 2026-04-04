@@ -293,21 +293,38 @@ async function fetchJobicy(
   keywords: string[],
   limit = 20
 ): Promise<JobListing[]> {
+  // Try multiple keywords in parallel (Jobicy only accepts one tag at a time)
+  const tags = keywords
+    .slice(0, 3)
+    .map((k) => k.replace(/\s+/g, "-").toLowerCase())
+    .filter(Boolean);
+
+  if (tags.length === 0) return [];
+
+  const perTag = Math.ceil(limit / tags.length);
+  const tagResults = await Promise.allSettled(
+    tags.map(async (tag) => {
+      const params = new URLSearchParams({
+        count: String(perTag),
+        tag,
+      });
+      const res = await fetch(
+        `https://jobicy.com/api/v2/remote-jobs?${params}`,
+        { next: { revalidate: 3600 } }
+      );
+      if (!res.ok) return [];
+      const data = await res.json();
+      return data.jobs || [];
+    })
+  );
+
+  const allJobs: JobicyJob[] = [];
+  for (const r of tagResults) {
+    if (r.status === "fulfilled") allJobs.push(...r.value);
+  }
+
   try {
-    const tag = keywords[0]?.replace(/\s+/g, "-").toLowerCase() || "";
-    const params = new URLSearchParams({
-      count: String(limit),
-      tag,
-    });
-
-    const res = await fetch(`https://jobicy.com/api/v2/remote-jobs?${params}`, {
-      next: { revalidate: 3600 },
-    });
-
-    if (!res.ok) return [];
-    const data = await res.json();
-
-    return (data.jobs || []).slice(0, limit).map((j: JobicyJob): JobListing => {
+    return allJobs.slice(0, limit).map((j: JobicyJob): JobListing => {
       let salaryRange: string | undefined;
       if (j.annualSalaryMin && j.annualSalaryMax) {
         const currency = j.salaryCurrency || "USD";
@@ -373,24 +390,13 @@ async function fetchAdzunaForCountry(
   if (!appId || !appKey) return [];
 
   try {
-    // Build query: prefer entry-level terms
-    const entryLevelTerms = [
-      "junior",
-      "entry level",
-      "intern",
-      "trainee",
-      "graduate",
-      "associate",
-    ];
-    // Mix career keywords with entry-level modifiers
-    const careerTerms = keywords.slice(0, 2).join(" OR ");
-    const what = `(${careerTerms}) AND (${entryLevelTerms.slice(0, 3).join(" OR ")})`;
-
+    // Simple keyword search — seniority filtering happens in the pipeline
+    const query = keywords.slice(0, 3).join(" OR ");
     const params = new URLSearchParams({
       app_id: appId,
       app_key: appKey,
       results_per_page: String(limit),
-      what,
+      what: query,
       content_type: "application/json",
     });
     if (adzunaCategory) params.set("category", adzunaCategory);
@@ -400,51 +406,9 @@ async function fetchAdzunaForCountry(
       { next: { revalidate: 3600 } }
     );
 
-    if (!res.ok) {
-      // Fallback: try without entry-level filter
-      const fallbackParams = new URLSearchParams({
-        app_id: appId,
-        app_key: appKey,
-        results_per_page: String(limit),
-        what: keywords.slice(0, 3).join(" OR "),
-        content_type: "application/json",
-      });
-      if (adzunaCategory) fallbackParams.set("category", adzunaCategory);
-
-      const fallbackRes = await fetch(
-        `https://api.adzuna.com/v1/api/jobs/${country}/search/1?${fallbackParams}`,
-        { next: { revalidate: 3600 } }
-      );
-      if (!fallbackRes.ok) return [];
-      const fallbackData = await fallbackRes.json();
-      return mapAdzunaJobs(fallbackData.results || [], country, limit);
-    }
-
+    if (!res.ok) return [];
     const data = await res.json();
-    const jobs = mapAdzunaJobs(data.results || [], country, limit);
-
-    // If entry-level query returned few results, also do a broader search
-    if (jobs.length < 3) {
-      const broadParams = new URLSearchParams({
-        app_id: appId,
-        app_key: appKey,
-        results_per_page: String(limit),
-        what: keywords.slice(0, 3).join(" OR "),
-        content_type: "application/json",
-      });
-      if (adzunaCategory) broadParams.set("category", adzunaCategory);
-
-      const broadRes = await fetch(
-        `https://api.adzuna.com/v1/api/jobs/${country}/search/1?${broadParams}`,
-        { next: { revalidate: 3600 } }
-      );
-      if (broadRes.ok) {
-        const broadData = await broadRes.json();
-        jobs.push(...mapAdzunaJobs(broadData.results || [], country, limit));
-      }
-    }
-
-    return jobs.slice(0, limit);
+    return mapAdzunaJobs(data.results || [], country, limit);
   } catch (e) {
     console.error(`[JobFetcher] Adzuna (${country}) error:`, e);
     return [];
@@ -627,11 +591,8 @@ export async function fetchJobsForCareer(
     entryLevel: isEntryLevel(job.title),
   }));
 
-  // Keep jobs with at least some relevance (> 0),
-  // BUT also keep entry-level/intern jobs even if relevance is marginal
-  const relevant = scored.filter(
-    (s) => s.relevance > 0 || (s.entryLevel && s.relevance >= 0)
-  );
+  // Keep only jobs with actual relevance to the career track
+  const relevant = scored.filter((s) => s.relevance > 0);
 
   // Step 4: Sort — entry-level/intern first, then by relevance + type priority
   relevant.sort((a, b) => {
@@ -653,20 +614,17 @@ export async function fetchJobsForCareer(
   const deduped = deduplicateJobs(relevant.map((s) => s.job));
   const final = deduped.slice(0, limit);
 
-  // If we got too few results after filtering, do a lenient pass
+  // If we got too few results, accept marginally relevant entry-level jobs
   if (final.length < 5) {
-    // Re-include jobs that had zero relevance but are entry-level
     const lenient = scored
-      .filter((s) => !isSeniorRole(s.job.title, slug))
+      .filter((s) => !isSeniorRole(s.job.title, slug) && s.entryLevel)
       .sort((a, b) => b.typePriority - a.typePriority);
 
-    const lenientDeduped = deduplicateJobs(lenient.map((s) => s.job));
-    // Add any we don't already have
     const existingIds = new Set(final.map((j) => j.id));
-    for (const job of lenientDeduped) {
-      if (!existingIds.has(job.id) && final.length < limit) {
-        final.push(job);
-        existingIds.add(job.id);
+    for (const s of lenient) {
+      if (!existingIds.has(s.job.id) && final.length < limit) {
+        final.push(s.job);
+        existingIds.add(s.job.id);
       }
     }
   }
