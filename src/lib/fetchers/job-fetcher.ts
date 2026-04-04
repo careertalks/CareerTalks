@@ -190,16 +190,24 @@ function scoreRelevance(
 ): number {
   const titleLower = job.title.toLowerCase();
   // Normalize tag separators: replace hyphens with spaces for matching
-  const tagsNormalized = (job.tags || [])
+  // Separate description-derived tags from regular tags for exclude checking
+  const regularTags = (job.tags || [])
+    .filter((t) => !t.startsWith("desc:"))
     .map((t) => t.toLowerCase().replace(/-/g, " "))
     .join(" | ");
-  const combined = `${titleLower} ${tagsNormalized}`;
+  const descTags = (job.tags || [])
+    .filter((t) => t.startsWith("desc:"))
+    .map((t) => t.toLowerCase())
+    .join(" ");
+  const tagsNormalized = regularTags + (descTags ? ` | ${descTags}` : "");
 
-  // Check exclude keywords with word boundaries
+  // Check exclude keywords ONLY against title and regular tags (not description)
+  // Descriptions often mention "Director" or "VP" in company context, not the role itself
+  const titleAndTags = `${titleLower} ${regularTags}`;
   if (
     exclude?.some((kw) => {
       const re = keywordRegex(kw);
-      return re.test(combined);
+      return re.test(titleAndTags);
     })
   ) {
     return 0;
