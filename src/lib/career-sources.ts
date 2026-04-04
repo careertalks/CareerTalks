@@ -30,8 +30,10 @@ export interface JobSearchKeywords {
   india?: string[];
   /** Negative keywords to exclude irrelevant results */
   exclude?: string[];
-  /** Remotive API category slug (if applicable) */
+  /** Remotive API category slug (primary) */
   remotiveCategory?: string;
+  /** Additional Remotive categories to query in parallel */
+  remotiveCategories?: string[];
   /** Adzuna category tag */
   adzunaCategory?: string;
   /** Adzuna countries to query (default: ["us", "in"]) */
@@ -83,7 +85,8 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       primary: ["data analyst", "data science", "machine learning", "AI", "data engineer", "analytics", "NLP", "deep learning"],
       india: ["data analyst", "machine learning intern", "AI trainee"],
       exclude: ["director", "VP", "chief"],
-      remotiveCategory: "software-dev",
+      remotiveCategory: "ai-ml",
+      remotiveCategories: ["ai-ml", "data"],
       adzunaCategory: "it-jobs",
       adzunaCountries: ["us", "in", "gb"],
     },
@@ -143,7 +146,8 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       primary: ["fintech", "financial analyst", "payments", "banking", "finance", "blockchain"],
       india: ["fintech", "financial analyst", "banking intern"],
       exclude: ["director", "VP"],
-      remotiveCategory: "all-others",
+      remotiveCategory: "finance",
+      remotiveCategories: ["finance"],
       adzunaCategory: "accounting-finance-jobs",
       adzunaCountries: ["us", "in", "gb"],
     },
@@ -201,7 +205,8 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       primary: ["product manager", "product management", "product analyst", "product owner", "APM", "product coordinator"],
       india: ["product analyst", "APM", "product coordinator"],
       exclude: ["director", "VP"],
-      remotiveCategory: "project-management",
+      remotiveCategory: "product",
+      remotiveCategories: ["product", "project-management"],
       adzunaCategory: "it-jobs",
       adzunaCountries: ["us", "in", "gb"],
     },
@@ -409,7 +414,8 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       primary: ["biotech", "pharmaceutical", "clinical research", "laboratory", "pharma", "biology"],
       india: ["pharma", "clinical research", "biotech"],
       exclude: ["director", "VP"],
-      remotiveCategory: "all-others",
+      remotiveCategory: "medical",
+      remotiveCategories: ["medical"],
       adzunaCategory: "scientific-qa-jobs",
       adzunaCountries: ["us", "in", "gb"],
     },
@@ -467,7 +473,8 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       primary: ["healthcare", "hospital", "health", "clinical", "medical", "nursing", "public health", "health informatics", "medical billing"],
       india: ["healthcare", "hospital", "clinical"],
       exclude: ["director", "VP"],
-      remotiveCategory: "all-others",
+      remotiveCategory: "medical",
+      remotiveCategories: ["medical"],
       adzunaCategory: "healthcare-nursing-jobs",
       adzunaCountries: ["us", "in", "gb"],
     },
@@ -499,7 +506,8 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       primary: ["legal", "paralegal", "law", "compliance", "lawyer", "legal assistant"],
       india: ["legal", "paralegal", "law"],
       exclude: ["director", "VP", "partner"],
-      remotiveCategory: "all-others",
+      remotiveCategory: "legal",
+      remotiveCategories: ["legal"],
       adzunaCategory: "legal-jobs",
       adzunaCountries: ["us", "in", "gb"],
     },
@@ -555,7 +563,8 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       primary: ["human resources", "HR", "recruiting", "talent acquisition", "people operations", "HR coordinator"],
       india: ["HR", "human resources", "recruiter"],
       exclude: ["director", "VP"],
-      remotiveCategory: "customer-service",
+      remotiveCategory: "human-resources",
+      remotiveCategories: ["human-resources"],
       adzunaCategory: "hr-jobs",
       adzunaCountries: ["us", "in", "gb"],
     },
@@ -611,7 +620,8 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       primary: ["teacher", "education", "tutor", "curriculum", "social worker", "edtech", "counselor"],
       india: ["teacher", "education", "tutor"],
       exclude: ["director", "VP"],
-      remotiveCategory: "all-others",
+      remotiveCategory: "education",
+      remotiveCategories: ["education"],
       adzunaCategory: "teaching-jobs",
       adzunaCountries: ["us", "in", "gb"],
     },
@@ -639,7 +649,8 @@ export const careerSources: Record<CareerSlug, CareerSourceConfig> = {
       primary: ["UX designer", "UI designer", "graphic designer", "graphic design", "creative design", "visual designer", "illustrator", "designer"],
       india: ["UX designer", "graphic designer", "design"],
       exclude: ["director", "VP"],
-      remotiveCategory: "software-dev",
+      remotiveCategory: "design",
+      remotiveCategories: ["design"],
       adzunaCategory: "creative-design-jobs",
       adzunaCountries: ["us", "in", "gb"],
     },

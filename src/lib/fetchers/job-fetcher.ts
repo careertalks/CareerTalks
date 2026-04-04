@@ -715,6 +715,7 @@ export async function fetchJobsForCareer(
     india,
     exclude,
     remotiveCategory,
+    remotiveCategories,
     adzunaCategory,
     adzunaCountries,
   } = config.jobKeywords;
@@ -725,10 +726,25 @@ export async function fetchJobsForCareer(
 
   const indiaKeywords = india || [];
 
+  // Build Remotive fetches — query multiple categories if available
+  const remotiveFetches: Promise<JobListing[]>[] = [];
+  const cats = remotiveCategories || (remotiveCategory ? [remotiveCategory] : []);
+  if (cats.length > 0) {
+    const perCat = Math.ceil(fetchLimit / cats.length);
+    for (const cat of cats) {
+      remotiveFetches.push(fetchRemotive(primary, cat, perCat));
+    }
+  } else {
+    // Keyword-only search (no category)
+    remotiveFetches.push(fetchRemotive(primary, undefined, fetchLimit));
+  }
+
   // Run ALL fetchers in parallel
-  const [remotiveJobs, jobicyJobs, himalayasJobs, adzunaJobs, jobicyIndia] =
+  const [remotiveResults, jobicyJobs, himalayasJobs, adzunaJobs, jobicyIndia] =
     await Promise.allSettled([
-      fetchRemotive(primary, remotiveCategory, fetchLimit),
+      Promise.allSettled(remotiveFetches).then((results) =>
+        results.flatMap((r) => (r.status === "fulfilled" ? r.value : []))
+      ),
       fetchJobicy(primary, fetchLimit),
       fetchHimalayas(primary, fetchLimit),
       fetchAdzuna(primary, adzunaCategory, countries, fetchLimit),
@@ -743,7 +759,7 @@ export async function fetchJobsForCareer(
   const activeSources: string[] = [];
 
   const results = [
-    { result: remotiveJobs, name: "Remotive" },
+    { result: remotiveResults, name: "Remotive" },
     { result: jobicyJobs, name: "Jobicy" },
     { result: himalayasJobs, name: "Himalayas" },
     { result: adzunaJobs, name: "Adzuna" },
