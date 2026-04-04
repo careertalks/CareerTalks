@@ -1,9 +1,19 @@
 /**
  * Job Fetcher — aggregates listings from multiple free APIs
  *
+ * AUDIENCE: 17–24 year-olds (students, graduates, early-career aspirants)
+ *
+ * Three layers of filtering:
+ *   1. Seniority filter — removes Senior, Director, VP, Principal, etc.
+ *   2. Relevance scoring — matches job title/tags against career keywords
+ *   3. Type prioritization — boosts internships, part-time, freelance, entry-level
+ *
  * Sources (all free, no API key for Tier 1):
- *   Tier 1 (no auth): Remotive, Jobicy, Himalayas
- *   Tier 2 (free key): Adzuna, The Muse
+ *   Tier 1 (no auth): Remotive, Jobicy
+ *   Tier 2 (free key): Adzuna
+ *   NOTE: Himalayas keyword filtering is non-functional (returns same jobs
+ *         regardless of params) — disabled until they fix their API.
+ *         The Muse category param is also unreliable — disabled.
  *
  * Usage:
  *   const jobs = await fetchJobsForCareer("ai-data-science");
@@ -24,7 +34,7 @@ export interface JobListing {
   salaryRange?: string;
   url: string;
   postedAt: string; // ISO date string
-  source: "remotive" | "jobicy" | "himalayas" | "adzuna" | "themuse";
+  source: "remotive" | "jobicy" | "adzuna";
   tags?: string[];
   remote: boolean;
 }
@@ -35,6 +45,168 @@ export interface JobFetchResult {
   sources: string[];
   fetchedAt: string;
   careerSlug: CareerSlug;
+}
+
+// ─── Seniority Filter (audience: 17–24 yr olds) ─────────────────────
+
+/** Title patterns that indicate senior/leadership roles (7+ yrs experience) */
+const SENIOR_TITLE_PATTERNS = [
+  /\bsenior\b/i,
+  /\bsr\.?\b/i,
+  /\bdirector\b/i,
+  /\bvp\b/i,
+  /\bvice\s*president\b/i,
+  /\bprincipal\b/i,
+  /\bstaff\b/i,
+  /\bhead\s+of\b/i,
+  /\bchief\b/i,
+  /\bc[a-z]o\b/i,      // CTO, CFO, COO, etc.
+  /\barchitect\b/i,     // Solutions Architect, etc. — usually 8+ yrs
+  /\blead\s+(engineer|developer|designer|manager)\b/i,
+  /\bengineering\s+manager\b/i,
+  /\bmanaging\s+director\b/i,
+  /\bpartner\b/i,        // law/consulting
+  /\b(7|8|9|10|12|15)\+?\s*years?\b/i,  // explicit experience requirements
+];
+
+/** Title patterns that indicate entry-level / student-friendly roles */
+const ENTRY_LEVEL_BOOST_PATTERNS = [
+  /\bjunior\b/i,
+  /\bjr\.?\b/i,
+  /\bintern\b/i,
+  /\binternship\b/i,
+  /\bentry[\s-]?level\b/i,
+  /\btrainee\b/i,
+  /\bgraduate\b/i,
+  /\bapprentice\b/i,
+  /\bassociate\b/i,
+  /\bfresher\b/i,
+  /\bstarter\b/i,
+  /\bfellow\b/i,
+  /\bpart[\s-]?time\b/i,
+  /\bfreelance\b/i,
+  /\bcontract\b/i,
+  /\bcoordinator\b/i,
+  /\bassistant\b/i,
+  /\banalyst\b/i,   // usually 0-3 yrs
+  /\bexecutive\b/i,  // in India this = entry-level (not exec)
+];
+
+/**
+ * Returns true if the job title indicates a senior role.
+ * Architecture roles are an exception for the architecture-planning career.
+ */
+function isSeniorRole(title: string, careerSlug?: CareerSlug): boolean {
+  const lower = title.toLowerCase();
+
+  // Exception: "architect" is valid for architecture-planning career
+  if (careerSlug === "architecture-planning" && /\barchitect\b/i.test(lower)) {
+    // Only flag if it also has "senior", "principal", etc.
+    const otherSeniorPatterns = SENIOR_TITLE_PATTERNS.filter(
+      (p) => !p.source.includes("architect")
+    );
+    return otherSeniorPatterns.some((p) => p.test(lower));
+  }
+
+  return SENIOR_TITLE_PATTERNS.some((p) => p.test(title));
+}
+
+/** Returns true if the title suggests entry-level suitability */
+function isEntryLevel(title: string): boolean {
+  return ENTRY_LEVEL_BOOST_PATTERNS.some((p) => p.test(title));
+}
+
+// ─── Relevance Scoring ──────────────────────────────────────────────
+
+/**
+ * Scores a job's relevance to a career track (0.0 to 1.0).
+ * Uses title + tags matching against career keywords.
+ * Returns 0 if the job has zero relevance (should be filtered out).
+ */
+function scoreRelevance(
+  job: JobListing,
+  primaryKeywords: string[],
+  exclude?: string[]
+): number {
+  const titleLower = job.title.toLowerCase();
+  const tagsLower = (job.tags || []).map((t) => t.toLowerCase()).join(" ");
+  const combined = `${titleLower} ${tagsLower}`;
+
+  // Check exclude keywords first
+  if (exclude?.some((kw) => combined.includes(kw.toLowerCase()))) {
+    return 0;
+  }
+
+  let score = 0;
+  let matchCount = 0;
+
+  for (const keyword of primaryKeywords) {
+    const kwLower = keyword.toLowerCase();
+    // Split multi-word keywords into individual terms too
+    const terms = kwLower.split(/\s+/);
+
+    // Full phrase match in title = highest value
+    if (titleLower.includes(kwLower)) {
+      score += 1.0;
+      matchCount++;
+      continue;
+    }
+
+    // Full phrase match in tags
+    if (tagsLower.includes(kwLower)) {
+      score += 0.7;
+      matchCount++;
+      continue;
+    }
+
+    // Individual term matches (partial relevance)
+    const termMatches = terms.filter((t) => t.length > 3 && combined.includes(t));
+    if (termMatches.length > 0) {
+      score += 0.3 * (termMatches.length / terms.length);
+      matchCount++;
+    }
+  }
+
+  if (matchCount === 0) return 0;
+
+  // Normalize: at least one strong match = 0.5+
+  return Math.min(1.0, score / Math.max(1, primaryKeywords.length / 2));
+}
+
+// ─── Type Prioritization ────────────────────────────────────────────
+
+/**
+ * Sorting score for job type suitability (higher = more suitable for audience).
+ * Internships and part-time come first.
+ */
+function typePriorityScore(job: JobListing): number {
+  let score = 0;
+
+  // Type priority (for 17-24 audience)
+  switch (job.type) {
+    case "internship":
+      score += 50;
+      break;
+    case "part-time":
+      score += 40;
+      break;
+    case "freelance":
+      score += 35;
+      break;
+    case "contract":
+      score += 30;
+      break;
+    case "full-time":
+      score += 10; // still included, just lower priority
+      break;
+  }
+
+  // Entry-level title boost
+  if (isEntryLevel(job.title)) {
+    score += 25;
+  }
+
+  return score;
 }
 
 // ─── Remotive (No Auth) ─────────────────────────────────────────────
@@ -57,40 +229,41 @@ interface RemotiveJob {
 async function fetchRemotive(
   keywords: string[],
   category?: string,
-  limit = 10
+  limit = 20
 ): Promise<JobListing[]> {
   try {
-    // Remotive works better with category alone; search + category can return 0
+    // Remotive: use category when available, otherwise keyword search
     const params = new URLSearchParams({ limit: String(limit) });
     if (category) {
       params.set("category", category);
     } else {
-      // Fall back to keyword search only if no category
       const searchQuery = keywords.slice(0, 2).join(" ");
       params.set("search", searchQuery);
     }
 
     const res = await fetch(`https://remotive.com/api/remote-jobs?${params}`, {
-      next: { revalidate: 3600 }, // Cache 1 hour
+      next: { revalidate: 3600 },
     });
 
     if (!res.ok) return [];
     const data = await res.json();
 
-    return (data.jobs || []).slice(0, limit).map((j: RemotiveJob): JobListing => ({
-      id: `remotive-${j.id}`,
-      title: j.title,
-      company: j.company_name,
-      companyLogo: j.company_logo || undefined,
-      location: j.candidate_required_location || "Remote",
-      type: mapJobType(j.job_type),
-      salaryRange: j.salary || undefined,
-      url: j.url,
-      postedAt: j.publication_date,
-      source: "remotive",
-      tags: j.tags || [],
-      remote: true,
-    }));
+    return (data.jobs || []).slice(0, limit).map(
+      (j: RemotiveJob): JobListing => ({
+        id: `remotive-${j.id}`,
+        title: j.title,
+        company: j.company_name,
+        companyLogo: j.company_logo || undefined,
+        location: j.candidate_required_location || "Remote",
+        type: mapJobType(j.job_type),
+        salaryRange: j.salary || undefined,
+        url: j.url,
+        postedAt: j.publication_date,
+        source: "remotive",
+        tags: j.tags || [],
+        remote: true,
+      })
+    );
   } catch (e) {
     console.error("[JobFetcher] Remotive error:", e);
     return [];
@@ -118,10 +291,9 @@ interface JobicyJob {
 
 async function fetchJobicy(
   keywords: string[],
-  limit = 10
+  limit = 20
 ): Promise<JobListing[]> {
   try {
-    // Jobicy uses tag parameter for keyword search
     const tag = keywords[0]?.replace(/\s+/g, "-").toLowerCase() || "";
     const params = new URLSearchParams({
       count: String(limit),
@@ -163,74 +335,6 @@ async function fetchJobicy(
   }
 }
 
-// ─── Himalayas (No Auth, 20 max per request) ────────────────────────
-
-interface HimalayasJob {
-  guid: string;
-  title: string;
-  companyName: string;
-  companySlug?: string;
-  companyLogo?: string;
-  locationRestrictions?: string[];
-  seniority?: string[];
-  employmentType?: string;
-  applicationLink: string;
-  pubDate: number; // Unix timestamp
-  minSalary?: number;
-  maxSalary?: number;
-  categories?: string[];
-}
-
-async function fetchHimalayas(
-  keywords: string[],
-  limit = 10
-): Promise<JobListing[]> {
-  try {
-    const keyword = keywords[0] || "";
-    const params = new URLSearchParams({
-      keyword,
-      limit: String(Math.min(limit, 20)), // Himalayas caps at 20
-    });
-
-    const res = await fetch(`https://himalayas.app/jobs/api?${params}`, {
-      next: { revalidate: 3600 },
-    });
-
-    if (!res.ok) return [];
-    const data = await res.json();
-
-    return (data.jobs || []).slice(0, limit).map((j: HimalayasJob): JobListing => {
-      let salaryRange: string | undefined;
-      if (j.minSalary && j.maxSalary) {
-        salaryRange = `$${formatSalary(j.minSalary)} – $${formatSalary(j.maxSalary)}`;
-      }
-
-      // pubDate is a Unix timestamp (seconds) — convert to ISO string
-      const postedAt = j.pubDate
-        ? new Date(j.pubDate * 1000).toISOString()
-        : new Date().toISOString();
-
-      return {
-        id: `himalayas-${j.guid || j.companySlug || j.title}`,
-        title: j.title,
-        company: j.companyName,
-        companyLogo: j.companyLogo || undefined,
-        location: j.locationRestrictions?.join(", ") || "Remote",
-        type: mapJobType(j.employmentType || "full_time"),
-        salaryRange,
-        url: j.applicationLink || j.guid || "",
-        postedAt,
-        source: "himalayas",
-        tags: j.categories || [],
-        remote: true,
-      };
-    });
-  } catch (e) {
-    console.error("[JobFetcher] Himalayas error:", e);
-    return [];
-  }
-}
-
 // ─── Adzuna (Requires Free API Key) ─────────────────────────────────
 
 interface AdzunaJob {
@@ -247,9 +351,15 @@ interface AdzunaJob {
   category: { tag: string; label: string };
 }
 
-// Currency symbols for Adzuna country results
 const ADZUNA_CURRENCY: Record<string, string> = {
-  us: "$", gb: "£", in: "₹", sg: "S$", au: "A$", ca: "C$", de: "€", fr: "€",
+  us: "$",
+  gb: "£",
+  in: "₹",
+  sg: "S$",
+  au: "A$",
+  ca: "C$",
+  de: "€",
+  fr: "€",
 };
 
 async function fetchAdzunaForCountry(
@@ -263,12 +373,24 @@ async function fetchAdzunaForCountry(
   if (!appId || !appKey) return [];
 
   try {
-    const query = keywords.slice(0, 3).join(" OR ");
+    // Build query: prefer entry-level terms
+    const entryLevelTerms = [
+      "junior",
+      "entry level",
+      "intern",
+      "trainee",
+      "graduate",
+      "associate",
+    ];
+    // Mix career keywords with entry-level modifiers
+    const careerTerms = keywords.slice(0, 2).join(" OR ");
+    const what = `(${careerTerms}) AND (${entryLevelTerms.slice(0, 3).join(" OR ")})`;
+
     const params = new URLSearchParams({
       app_id: appId,
       app_key: appKey,
       results_per_page: String(limit),
-      what: query,
+      what,
       content_type: "application/json",
     });
     if (adzunaCategory) params.set("category", adzunaCategory);
@@ -278,12 +400,65 @@ async function fetchAdzunaForCountry(
       { next: { revalidate: 3600 } }
     );
 
-    if (!res.ok) return [];
+    if (!res.ok) {
+      // Fallback: try without entry-level filter
+      const fallbackParams = new URLSearchParams({
+        app_id: appId,
+        app_key: appKey,
+        results_per_page: String(limit),
+        what: keywords.slice(0, 3).join(" OR "),
+        content_type: "application/json",
+      });
+      if (adzunaCategory) fallbackParams.set("category", adzunaCategory);
+
+      const fallbackRes = await fetch(
+        `https://api.adzuna.com/v1/api/jobs/${country}/search/1?${fallbackParams}`,
+        { next: { revalidate: 3600 } }
+      );
+      if (!fallbackRes.ok) return [];
+      const fallbackData = await fallbackRes.json();
+      return mapAdzunaJobs(fallbackData.results || [], country, limit);
+    }
+
     const data = await res.json();
+    const jobs = mapAdzunaJobs(data.results || [], country, limit);
 
-    const currencySymbol = ADZUNA_CURRENCY[country] || "$";
+    // If entry-level query returned few results, also do a broader search
+    if (jobs.length < 3) {
+      const broadParams = new URLSearchParams({
+        app_id: appId,
+        app_key: appKey,
+        results_per_page: String(limit),
+        what: keywords.slice(0, 3).join(" OR "),
+        content_type: "application/json",
+      });
+      if (adzunaCategory) broadParams.set("category", adzunaCategory);
 
-    return (data.results || []).slice(0, limit).map((j: AdzunaJob): JobListing => {
+      const broadRes = await fetch(
+        `https://api.adzuna.com/v1/api/jobs/${country}/search/1?${broadParams}`,
+        { next: { revalidate: 3600 } }
+      );
+      if (broadRes.ok) {
+        const broadData = await broadRes.json();
+        jobs.push(...mapAdzunaJobs(broadData.results || [], country, limit));
+      }
+    }
+
+    return jobs.slice(0, limit);
+  } catch (e) {
+    console.error(`[JobFetcher] Adzuna (${country}) error:`, e);
+    return [];
+  }
+}
+
+function mapAdzunaJobs(
+  results: AdzunaJob[],
+  country: string,
+  limit: number
+): JobListing[] {
+  const currencySymbol = ADZUNA_CURRENCY[country] || "$";
+  return results.slice(0, limit).map(
+    (j: AdzunaJob): JobListing => {
       let salaryRange: string | undefined;
       if (j.salary_min && j.salary_max) {
         salaryRange = `${currencySymbol}${formatSalary(j.salary_min)} – ${currencySymbol}${formatSalary(j.salary_max)}`;
@@ -300,29 +475,26 @@ async function fetchAdzunaForCountry(
         postedAt: j.created,
         source: "adzuna",
         tags: [j.category?.label, country.toUpperCase()].filter(Boolean),
-        remote: j.title.toLowerCase().includes("remote") || j.location?.display_name?.toLowerCase().includes("remote"),
+        remote:
+          j.title.toLowerCase().includes("remote") ||
+          j.location?.display_name?.toLowerCase().includes("remote"),
       };
-    });
-  } catch (e) {
-    console.error(`[JobFetcher] Adzuna (${country}) error:`, e);
-    return [];
-  }
+    }
+  );
 }
 
-/**
- * Fetch from Adzuna across multiple countries in parallel.
- * Splits the limit evenly across countries.
- */
 async function fetchAdzuna(
   keywords: string[],
   adzunaCategory?: string,
   countries: string[] = ["us"],
   limit = 10
 ): Promise<JobListing[]> {
-  const perCountry = Math.max(3, Math.ceil(limit / countries.length));
+  const perCountry = Math.max(5, Math.ceil(limit / countries.length));
 
   const results = await Promise.allSettled(
-    countries.map((c) => fetchAdzunaForCountry(c, keywords, adzunaCategory, perCountry))
+    countries.map((c) =>
+      fetchAdzunaForCountry(c, keywords, adzunaCategory, perCountry)
+    )
   );
 
   const allJobs: JobListing[] = [];
@@ -332,73 +504,20 @@ async function fetchAdzuna(
   return allJobs.slice(0, limit);
 }
 
-// ─── The Muse (Free, 500 req/hr unregistered) ──────────────────────
-
-interface MuseJob {
-  id: number;
-  name: string;
-  type: string;
-  company: { name: string };
-  locations: { name: string }[];
-  publication_date: string;
-  refs: { landing_page: string };
-  levels: { name: string }[];
-  categories: { name: string }[];
-}
-
-async function fetchTheMuse(
-  keywords: string[],
-  limit = 10
-): Promise<JobListing[]> {
-  try {
-    // The Muse uses category parameter
-    const params = new URLSearchParams({
-      page: "0",
-      descending: "true",
-    });
-    // Add keyword as category filter if possible
-    if (keywords[0]) {
-      params.set("category", keywords[0]);
-    }
-
-    const apiKey = process.env.THEMUSE_API_KEY;
-    if (apiKey) params.set("api_key", apiKey);
-
-    const res = await fetch(
-      `https://www.themuse.com/api/public/jobs?${params}`,
-      { next: { revalidate: 3600 } }
-    );
-
-    if (!res.ok) return [];
-    const data = await res.json();
-
-    return (data.results || []).slice(0, limit).map((j: MuseJob): JobListing => ({
-      id: `themuse-${j.id}`,
-      title: j.name,
-      company: j.company?.name || "Unknown",
-      location: j.locations?.map((l) => l.name).join(", ") || "Various",
-      type: mapJobType(j.type || "full_time"),
-      url: j.refs?.landing_page || `https://www.themuse.com/jobs/${j.id}`,
-      postedAt: j.publication_date,
-      source: "themuse",
-      tags: j.categories?.map((c) => c.name) || [],
-      remote: j.locations?.some((l) => l.name.toLowerCase().includes("remote")) || false,
-    }));
-  } catch (e) {
-    console.error("[JobFetcher] TheMuse error:", e);
-    return [];
-  }
-}
-
 // ─── Utilities ───────────────────────────────────────────────────────
 
 function mapJobType(raw: string): JobListing["type"] {
   const lower = (raw || "").toLowerCase().replace(/[_-]/g, "");
   if (lower.includes("fulltime") || lower === "permanent") return "full-time";
   if (lower.includes("parttime")) return "part-time";
-  if (lower.includes("contract") || lower.includes("temporary")) return "contract";
+  if (
+    lower.includes("contract") ||
+    lower.includes("temporary")
+  )
+    return "contract";
   if (lower.includes("freelance")) return "freelance";
-  if (lower.includes("internship") || lower.includes("intern")) return "internship";
+  if (lower.includes("internship") || lower.includes("intern"))
+    return "internship";
   return "full-time";
 }
 
@@ -410,7 +529,6 @@ function formatSalary(n: number): string {
 function deduplicateJobs(jobs: JobListing[]): JobListing[] {
   const seen = new Set<string>();
   return jobs.filter((job) => {
-    // Normalize: lowercase title + company to deduplicate across sources
     const key = `${job.title.toLowerCase().trim()}|${job.company.toLowerCase().trim()}`;
     if (seen.has(key)) return false;
     seen.add(key);
@@ -418,19 +536,18 @@ function deduplicateJobs(jobs: JobListing[]): JobListing[] {
   });
 }
 
-function sortByDate(jobs: JobListing[]): JobListing[] {
-  return jobs.sort((a, b) => {
-    const da = new Date(a.postedAt).getTime() || 0;
-    const db = new Date(b.postedAt).getTime() || 0;
-    return db - da; // newest first
-  });
-}
-
 // ─── Main Aggregator ─────────────────────────────────────────────────
 
 /**
  * Fetches jobs from all available APIs for a given career slug.
- * Runs all APIs in parallel, deduplicates, and sorts by date.
+ *
+ * Pipeline:
+ *   1. Fetch from Remotive + Jobicy + Adzuna in parallel (broader fetch)
+ *   2. Remove senior/leadership titles (audience = 17–24 yr olds)
+ *   3. Score relevance against career keywords (drop irrelevant ones)
+ *   4. Sort by: type priority (intern > part-time > freelance > contract > full-time)
+ *              then by relevance score, then by date
+ *   5. Deduplicate and return top N
  */
 export async function fetchJobsForCareer(
   slug: CareerSlug,
@@ -447,24 +564,31 @@ export async function fetchJobsForCareer(
     };
   }
 
-  const { primary, india, remotiveCategory, adzunaCategory, adzunaCountries } = config.jobKeywords;
+  const {
+    primary,
+    india,
+    exclude,
+    remotiveCategory,
+    adzunaCategory,
+    adzunaCountries,
+  } = config.jobKeywords;
   const countries = adzunaCountries || ["us", "in"];
-  const perSourceLimit = Math.ceil(limit / 3); // Distribute across sources
 
-  // Use India-specific keywords for Jobicy/Himalayas as bonus queries
+  // Fetch MORE than needed so we have room after filtering
+  const fetchLimit = Math.min(limit * 3, 50);
+
   const indiaKeywords = india || [];
 
-  // Run all fetchers in parallel
-  const [remotiveJobs, jobicyJobs, himalayasJobs, adzunaJobs, museJobs, jobicyIndia, himalayasIndia] =
+  // Run working fetchers in parallel (Himalayas and TheMuse are disabled)
+  const [remotiveJobs, jobicyJobs, adzunaJobs, jobicyIndia] =
     await Promise.allSettled([
-      fetchRemotive(primary, remotiveCategory, perSourceLimit),
-      fetchJobicy(primary, perSourceLimit),
-      fetchHimalayas(primary, perSourceLimit),
-      fetchAdzuna(primary, adzunaCategory, countries, perSourceLimit),
-      fetchTheMuse(primary, perSourceLimit),
-      // Bonus India-specific queries (use first India keyword if available)
-      indiaKeywords.length > 0 ? fetchJobicy(indiaKeywords.slice(0, 1), Math.ceil(perSourceLimit / 2)) : Promise.resolve([]),
-      indiaKeywords.length > 0 ? fetchHimalayas(indiaKeywords.slice(0, 1), Math.ceil(perSourceLimit / 2)) : Promise.resolve([]),
+      fetchRemotive(primary, remotiveCategory, fetchLimit),
+      fetchJobicy(primary, fetchLimit),
+      fetchAdzuna(primary, adzunaCategory, countries, fetchLimit),
+      // Bonus India-specific query via Jobicy
+      indiaKeywords.length > 0
+        ? fetchJobicy(indiaKeywords.slice(0, 1), Math.ceil(fetchLimit / 2))
+        : Promise.resolve([]),
     ]);
 
   // Collect all successful results
@@ -474,25 +598,81 @@ export async function fetchJobsForCareer(
   const results = [
     { result: remotiveJobs, name: "Remotive" },
     { result: jobicyJobs, name: "Jobicy" },
-    { result: himalayasJobs, name: "Himalayas" },
     { result: adzunaJobs, name: "Adzuna" },
-    { result: museJobs, name: "The Muse" },
-    { result: jobicyIndia, name: "Jobicy" },      // India bonus (deduped later)
-    { result: himalayasIndia, name: "Himalayas" }, // India bonus (deduped later)
+    { result: jobicyIndia, name: "Jobicy" },
   ];
 
   for (const { result, name } of results) {
     if (result.status === "fulfilled" && result.value.length > 0) {
       allJobs.push(...result.value);
-      activeSources.push(name);
+      if (!activeSources.includes(name)) activeSources.push(name);
     }
   }
 
-  const deduped = deduplicateJobs(allJobs);
-  const sorted = sortByDate(deduped).slice(0, limit);
+  // ─── FILTER PIPELINE ──────────────────────────────────────────
+
+  // Step 1: Remove jobs without valid URLs
+  let filtered = allJobs.filter(
+    (j) => j.url && j.url.startsWith("http")
+  );
+
+  // Step 2: Remove senior/leadership roles
+  filtered = filtered.filter((j) => !isSeniorRole(j.title, slug));
+
+  // Step 3: Score relevance and remove irrelevant jobs
+  const scored = filtered.map((job) => ({
+    job,
+    relevance: scoreRelevance(job, primary, exclude),
+    typePriority: typePriorityScore(job),
+    entryLevel: isEntryLevel(job.title),
+  }));
+
+  // Keep jobs with at least some relevance (> 0),
+  // BUT also keep entry-level/intern jobs even if relevance is marginal
+  const relevant = scored.filter(
+    (s) => s.relevance > 0 || (s.entryLevel && s.relevance >= 0)
+  );
+
+  // Step 4: Sort — entry-level/intern first, then by relevance + type priority
+  relevant.sort((a, b) => {
+    // Primary: type priority (internship > part-time > freelance > ...)
+    const typeDiff = b.typePriority - a.typePriority;
+    if (typeDiff !== 0) return typeDiff;
+
+    // Secondary: relevance score
+    const relDiff = b.relevance - a.relevance;
+    if (Math.abs(relDiff) > 0.1) return relDiff;
+
+    // Tertiary: newest first
+    const da = new Date(a.job.postedAt).getTime() || 0;
+    const db = new Date(b.job.postedAt).getTime() || 0;
+    return db - da;
+  });
+
+  // Step 5: Deduplicate and cap
+  const deduped = deduplicateJobs(relevant.map((s) => s.job));
+  const final = deduped.slice(0, limit);
+
+  // If we got too few results after filtering, do a lenient pass
+  if (final.length < 5) {
+    // Re-include jobs that had zero relevance but are entry-level
+    const lenient = scored
+      .filter((s) => !isSeniorRole(s.job.title, slug))
+      .sort((a, b) => b.typePriority - a.typePriority);
+
+    const lenientDeduped = deduplicateJobs(lenient.map((s) => s.job));
+    // Add any we don't already have
+    const existingIds = new Set(final.map((j) => j.id));
+    for (const job of lenientDeduped) {
+      if (!existingIds.has(job.id) && final.length < limit) {
+        final.push(job);
+        existingIds.add(job.id);
+      }
+    }
+  }
 
   return {
-    jobs: sorted,
+    jobs: final,
     totalFound: deduped.length,
     sources: activeSources,
     fetchedAt: new Date().toISOString(),
