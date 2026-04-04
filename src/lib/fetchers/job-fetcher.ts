@@ -167,8 +167,12 @@ function keywordRegex(keyword: string): RegExp {
 
 /**
  * Scores a job's relevance to a career track (0.0 to 1.0).
- * Uses WORD-BOUNDARY matching (not substring) to avoid false positives
- * like "AI" matching "training" or "design" matching "Instructional-Design".
+ * Uses WORD-BOUNDARY matching (not substring) to avoid false positives.
+ *
+ * KEY RULE: At least one keyword must match in the job TITLE (not just tags).
+ * Tag-only matches are too noisy — e.g., an "Office Assistant" tagged "frontend"
+ * should not appear in the software-development track.
+ *
  * Returns 0 if the job has zero relevance (should be filtered out).
  */
 function scoreRelevance(
@@ -194,7 +198,8 @@ function scoreRelevance(
   }
 
   let score = 0;
-  let matchCount = 0;
+  let titleMatchCount = 0;
+  let tagMatchCount = 0;
 
   for (const keyword of primaryKeywords) {
     const re = keywordRegex(keyword);
@@ -202,19 +207,19 @@ function scoreRelevance(
     // Full keyword match in title = highest value
     if (re.test(titleLower)) {
       score += 1.0;
-      matchCount++;
+      titleMatchCount++;
       continue;
     }
 
-    // Full keyword match in tags (normalized)
+    // Full keyword match in tags (lower score, acts as bonus only)
     if (re.test(tagsNormalized)) {
-      score += 0.6;
-      matchCount++;
+      score += 0.4;
+      tagMatchCount++;
       continue;
     }
 
     // For multi-word keywords, check if individual LONG terms match in title
-    // (must be 5+ chars to be meaningful — avoids "data" matching everywhere)
+    // (must be 5+ chars to be meaningful)
     const terms = keyword.toLowerCase().split(/\s+/);
     if (terms.length > 1) {
       const titleTermMatches = terms.filter(
@@ -222,12 +227,18 @@ function scoreRelevance(
       );
       if (titleTermMatches.length > 0) {
         score += 0.3 * (titleTermMatches.length / terms.length);
-        matchCount++;
+        titleMatchCount++;
       }
     }
   }
 
-  if (matchCount === 0) return 0;
+  // CRITICAL: Require at least one title-level match.
+  // Tag-only matches are too noisy (e.g., "Office Assistant" tagged "frontend",
+  // "Content Reviewer" tagged "AI/ML", "Customer Care Rep" tagged "Banking").
+  if (titleMatchCount === 0) return 0;
+
+  const totalMatches = titleMatchCount + tagMatchCount;
+  if (totalMatches === 0) return 0;
 
   // Normalize: at least one strong match = 0.5+
   return Math.min(1.0, score / Math.max(1, primaryKeywords.length / 2));
@@ -466,22 +477,29 @@ async function fetchHimalayas(
         seniority.some((s) => HIMALAYAS_OK_SENIORITY.has(s));
       if (!seniorityOk) continue;
 
-      // Step 2: Check category relevance (using word-boundary matching)
+      // Step 2: Check relevance via categories + title (word-boundary matching)
       // Normalize categories: "Product-Management" → "product management"
       const catsNormalized = (j.categories || [])
         .map((c) => c.toLowerCase().replace(/-/g, " "))
         .join(" | ");
       const titleLower = j.title.toLowerCase();
 
-      let relevant = false;
+      // Count how many keywords match in title vs categories
+      let titleMatch = false;
+      let catMatchCount = 0;
       for (const re of kwRegexes) {
-        if (re.test(catsNormalized) || re.test(titleLower)) {
-          relevant = true;
-          break;
+        if (re.test(titleLower)) {
+          titleMatch = true;
+          break; // Title match is sufficient
+        }
+        if (re.test(catsNormalized)) {
+          catMatchCount++;
         }
       }
 
-      if (!relevant) continue;
+      // Require either a title match OR at least 2 category matches
+      // (single category match is too noisy — e.g., "Operations" matches many jobs)
+      if (!titleMatch && catMatchCount < 2) continue;
 
       // Map to our format
       const postedAt = j.pubDate
