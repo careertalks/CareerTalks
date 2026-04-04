@@ -9,7 +9,6 @@ import {
   getClusterForCareer,
   getCareersByCluster,
 } from "@/lib/career-config";
-import { getArticlesByCategory } from "@/lib/articles";
 import LatestTab from "./career-hub/LatestTab";
 import PracticeTab from "./career-hub/PracticeTab";
 import EarnNowTab from "./career-hub/EarnNowTab";
@@ -17,6 +16,11 @@ import ProgressRings from "./career-hub/ProgressRings";
 
 // ─── Types ───
 type TabId = "latest" | "practice" | "earn";
+
+interface CareerHubPageProps {
+  career: CareerSlug;
+  articleCount?: number;
+}
 
 interface ProgressData {
   knowledge: { done: number; total: number };
@@ -95,9 +99,8 @@ function getCurrentCycleDates(): { start: string; end: string } {
 // ──────────────────────────────────────────────────────────────
 export default function CareerHubPage({
   career: careerSlug,
-}: {
-  career: CareerSlug;
-}) {
+  articleCount = 6,
+}: CareerHubPageProps) {
   const career = careerConfigs[careerSlug];
   const cluster = getClusterForCareer(careerSlug);
   const clusterColor = CLUSTER_COLORS[career.cluster] || "#3B82F6";
@@ -121,16 +124,13 @@ export default function CareerHubPage({
     .filter((c) => c.slug !== careerSlug)
     .slice(0, 3);
 
-  // Existing articles count for Knowledge total
-  const articles = getArticlesByCategory(careerSlug);
-
-  // Update progress totals based on actual data
+  // Update progress totals based on actual article count (passed from server)
   useEffect(() => {
     setProgress((prev) => ({
       ...prev,
-      knowledge: { ...prev.knowledge, total: Math.max(articles.length, 6) },
+      knowledge: { ...prev.knowledge, total: Math.max(articleCount, 6) },
     }));
-  }, [articles.length]);
+  }, [articleCount]);
 
   // Save progress when it changes
   useEffect(() => {

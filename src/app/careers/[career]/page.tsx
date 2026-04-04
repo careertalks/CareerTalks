@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { careerConfigs, getAllCareerSlugs, clusterConfigs } from "@/lib/career-config";
 import type { CareerSlug } from "@/lib/career-config";
+import { getArticlesByCategory } from "@/lib/articles";
 import CareerHubPage from "@/components/CareerHubPage";
 import { BreadcrumbJsonLd, OccupationJsonLd } from "@/components/JsonLd";
 
@@ -56,6 +57,7 @@ export default async function CareerPage({
   }
 
   const config = careerConfigs[career as CareerSlug];
+  const articles = getArticlesByCategory(career as CareerSlug);
 
   return (
     <>
@@ -72,7 +74,7 @@ export default async function CareerPage({
         growthRate={config.stats.growthRate}
         skills={config.stats.topRoles}
       />
-      <CareerHubPage career={career as CareerSlug} />
+      <CareerHubPage career={career as CareerSlug} articleCount={articles.length} />
     </>
   );
 }
