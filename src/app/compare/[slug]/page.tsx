@@ -58,6 +58,9 @@ export async function generateMetadata({
       `${configA.title} salary`,
       `${configB.title} salary`,
     ],
+    // Keep comparison pages out of Google index until we add unique
+    // analysis content.  They're thin template pages right now.
+    robots: { index: false, follow: true },
     alternates: {
       canonical: `https://careertalks.space/compare/${slug}`,
     },
